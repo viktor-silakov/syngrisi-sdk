@@ -1,22 +1,12 @@
-const api = require('./lib/api');
+// const api = require('./lib/api').default;
 const fs = require('fs');
 const probe = require('probe-image-size');
 
 class LTDriver {
-    constructor() {
-        const vrsPort = process.env.VRS_PORT || 3000
-        const vrsHost = process.env.VRS_HOST || 'vrs'
-        this._config = {
-            url: `http://${vrsHost}:${vrsPort}/`
-        };
+    constructor(cfg) {
+        this._api = new (require('./lib/api').VRSAPI)(cfg);
+        this._config = cfg;
         this._params = {};
-    }
-
-    async init(config) {
-        console.log(`Init new instance of LT Driver`);
-        if (config)
-            this._config = config;
-        return this;
     }
 
     async getVieport() {
@@ -24,7 +14,6 @@ class LTDriver {
             const viewport = await browser.getWindowSize();
             resolve(`${viewport.width}x${viewport.height}`);
         })
-
     }
 
     async getOS() {
@@ -47,30 +36,30 @@ class LTDriver {
         classThis._params.browserName = await classThis.getBrowserName();
         classThis._params.app = params.app;
         classThis._params.test = params.test;
-        const testJson = await api.createTest({
+        const testJson = await classThis._api.createTest({
             name: params.test,
             status: 'Running',
-            viewport: this._params.vieport,
-            browserName: this._params.browserName,
-            os: this._params.os
-        }, this._config).catch(err => console.error('Error: ' + err))
+            viewport: classThis._params.vieport,
+            browserName: classThis._params.browserName,
+            os: classThis._params.os
+        }).catch(err => console.error('Error: ' + err))
         if (!testJson)
             console.error(`response is empty, params: ${JSON.stringify(params, null, "\t")}`)
 
         const test = JSON.parse(testJson);
-        this._params.testId = test['_id'];
+        classThis._params.testId = test['_id'];
     }
 
     // FOR DEBUG PURPOSE
     async updateTest() {
         const testId = this._params.testId;
 
-        await api.updateTest({
+        await this._api.updateTest({
             id: testId,
             status: 'New',
             blinking: 1000,
             viewport: 'xXx'
-        }, this._config)
+        })
     }
 
     async stopSession() {
@@ -79,11 +68,11 @@ class LTDriver {
         const testId = this._params.testId;
 
         await this.waitUntil(async () => {
-            return (await api.getChecksByTestId(testId, this._config))
+            return (await this._api.getChecksByTestId(testId))
                 .filter(ch => ch.status.toString() !== 'pending').length > 0;
         });
 
-        const checksGroup = await api.getChecksGroupByIdent(this._params.testId, this._config)
+        const checksGroup = await this._api.getChecksGroupByIdent(this._params.testId)
         const groupStatuses = Object.keys(checksGroup).map(group => checksGroup[group].status);
         let testStatus = 'not set';
         if (groupStatuses.some(st => st === 'failed'))
@@ -100,12 +89,12 @@ class LTDriver {
         if (groupStatuses.every(st => st === 'new'))
             testStatus = 'New'
         const blinkingCount = groupStatuses.filter(g => g === 'blinking').length;
-        await api.updateTest({
+        await this._api.updateTest({
             id: testId,
             status: testStatus,
             blinking: blinkingCount,
             viewport: await this.getVieport()
-        }, this._config)
+        })
     }
 
     async check(checkOpts) {
@@ -140,7 +129,7 @@ class LTDriver {
                     params.viewport = `${vp.width}x${vp.height}`
                 }
                 params.os = await classThis.getOS();
-                api.createCheck(params, filePath, classThis._config).then(function (result) {
+                classThis._api.createCheck(params, filePath).then(function (result) {
                         console.log(`Check result: ${result}`)
                         resolve(JSON.parse(JSON.parse(result)));
                     },
