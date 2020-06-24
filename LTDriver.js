@@ -42,7 +42,11 @@ class LTDriver {
             viewport: classThis._params.vieport,
             browserName: classThis._params.browserName,
             os: classThis._params.os
-        }).catch(err => console.error('Error: ' + err))
+        }).catch((e) => {
+                console.log('Cannot start session, error: ' + e);
+                throw e.stack.split("\n")
+            }
+        )
         if (!respJson)
             console.error(`response is empty, params: ${JSON.stringify(params, null, "\t")}`)
         classThis._params.testId = respJson['_id'];
@@ -92,58 +96,66 @@ class LTDriver {
             status: testStatus,
             blinking: blinkingCount,
             viewport: await this.getVieport()
+        }).catch(function (e) {
+            console.log(`Cannot stop session`)
+            throw e.stack.split("\n")
         })
     }
 
     async check(checkOpts) {
         const classThis = this;
         return new Promise(async function (resolve, reject) {
-                if (classThis._params.testId === undefined)
-                    throw `Test id is empty session may not have started, driver: '${JSON.stringify(classThis, null, "\t")}'`
+                try {
+                    if (classThis._params.testId === undefined)
+                        throw `Test id is empty session may not have started, driver: '${JSON.stringify(classThis, null, "\t")}'`
 
-                const fName = checkOpts.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-                let filePath = '';
-                if (checkOpts.filename) {
-                    filePath = checkOpts.filename;
-                } else if (checkOpts.element) {
-                    const ssPath = browser.config.rootPath + '/.tmp/' + fName + '.png'
-                    await checkOpts.element.saveScreenshot(ssPath)
-                    filePath = ssPath
-                } else {
-                    const ssData = await browser.saveFullPageScreen(fName);
-                    filePath = ssData.path + '/' + ssData.fileName;
-                }
+                    const fName = checkOpts.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+                    let filePath = '';
+                    if (checkOpts.filename) {
+                        filePath = checkOpts.filename;
+                    } else if (checkOpts.element) {
+                        const ssPath = browser.config.rootPath + '/.tmp/' + fName + '.png'
+                        await checkOpts.element.saveScreenshot(ssPath)
+                        filePath = ssPath
+                    } else {
+                        const ssData = await browser.saveFullPageScreen(fName);
+                        filePath = ssData.path + '/' + ssData.fileName;
+                    }
 
-                console.log(`CHECK: ${JSON.stringify(classThis._params)}`);
-                let params = classThis._params;
-                params.name = fName;
-                params.testid = classThis._params.testId;
-                params.browserName = classThis._params.browserName;
-                if (!checkOpts.filename) {
-                    params.viewport = await classThis.getVieport();
-                } else {
-                    const input = require('fs').createReadStream(filePath);
-                    const vp = await probe(input)
-                    params.viewport = `${vp.width}x${vp.height}`
-                }
-                params.os = await classThis.getOS();
-                classThis._api.createCheck(params, filePath).then(function (result) {
-                        console.log(`Check result: ${JSON.stringify(result)}`)
-                        resolve(result);
-                    },
-                    function (error) {
-                        const msg = `Cannot create check: '${error}'`
-                        console.error(msg);
-                        reject(msg);
+                    console.log(`CHECK: ${JSON.stringify(classThis._params)}`);
+                    let params = classThis._params;
+                    params.name = fName;
+                    params.testid = classThis._params.testId;
+                    params.browserName = classThis._params.browserName;
+                    if (!checkOpts.filename) {
+                        params.viewport = await classThis.getVieport();
+                    } else {
+                        const input = require('fs').createReadStream(filePath);
+                        const vp = await probe(input)
+                        params.viewport = `${vp.width}x${vp.height}`
+                    }
+                    params.os = await classThis.getOS();
+                    classThis._api.createCheck(params, filePath).then(function (result) {
+                            console.log(`Check result: ${JSON.stringify(result)}`)
+                            resolve(result);
+                        },
+                        function (error) {
+                            const msg = `Cannot create check: '${error}'`
+                            console.error(msg);
+                            reject(msg);
 
-                    });
-                if (!checkOpts.filename) {
-                    fs.unlink(filePath, (err) => {
-                        if (err) {
-                            console.error(err);
-                            reject(err);
-                        }
-                    });
+                        });
+                    if (!checkOpts.filename) {
+                        fs.unlink(filePath, (err) => {
+                            if (err) {
+                                console.error(err);
+                                reject(err);
+                            }
+                        });
+                    }
+                } catch (e) {
+                    console.log(`Cannot create check with options: '${JSON.stringify(checkOpts)}'`)
+                    reject(e)
                 }
             }
         )
