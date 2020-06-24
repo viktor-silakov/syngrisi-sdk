@@ -1,0 +1,31 @@
+{
+  "name": "vrs-api-client",
+  "version": "1.0.0",
+  "description": "Client side for Visual Regression Service",
+  "main": "ATDriver.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/viktor-silakov/vrs-api-client.git"
+  },
+  "keywords": [
+    "visual",
+    "regression",
+    "test"
+  ],
+  "author": "Viktar Silakou",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/viktor-silakov/vrs-api-client/issues"
+  },
+  "homepage": "https://github.com/viktor-silakov/vrs-api-client#readme",
+  "dependencies": {
+    "got": "^11.3.0",
+    "probe-image-size": "^5.0.0"
+  }
+}
