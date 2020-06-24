@@ -36,18 +36,16 @@ class LTDriver {
         classThis._params.browserName = await classThis.getBrowserName();
         classThis._params.app = params.app;
         classThis._params.test = params.test;
-        const testJson = await classThis._api.createTest({
+        const respJson = await classThis._api.createTest({
             name: params.test,
             status: 'Running',
             viewport: classThis._params.vieport,
             browserName: classThis._params.browserName,
             os: classThis._params.os
         }).catch(err => console.error('Error: ' + err))
-        if (!testJson)
+        if (!respJson)
             console.error(`response is empty, params: ${JSON.stringify(params, null, "\t")}`)
-
-        const test = JSON.parse(testJson);
-        classThis._params.testId = test['_id'];
+        classThis._params.testId = respJson['_id'];
     }
 
     // FOR DEBUG PURPOSE
@@ -130,8 +128,8 @@ class LTDriver {
                 }
                 params.os = await classThis.getOS();
                 classThis._api.createCheck(params, filePath).then(function (result) {
-                        console.log(`Check result: ${result}`)
-                        resolve(JSON.parse(JSON.parse(result)));
+                        console.log(`Check result: ${JSON.stringify(result)}`)
+                        resolve(result);
                     },
                     function (error) {
                         const msg = `Cannot create check: '${error}'`
