@@ -108,7 +108,6 @@ class LTDriver {
         }, this._config)
     }
 
-
     async check(checkOpts) {
         const classThis = this;
         return new Promise(async function (resolve, reject) {

@@ -48,7 +48,6 @@ class ATDriver {
     }
 
     stopSession() {
-        // console.log("STOP" + this.ATeyes);
         return this.ATeyes.closeAsync();
     }
 
@@ -66,7 +65,6 @@ class ATDriver {
     }
 
     set suite(params) {
-        // console.log(`SET SUITE: ${JSON.stringify(this.ATeyes._configuration, 2)}`);
         if (params.id) {
             return this.ATeyes.setBatch(params.name, params.id);
         }
