@@ -118,7 +118,7 @@ class LTDriver {
                         await checkOpts.element.saveScreenshot(ssPath)
                         filePath = ssPath
                     } else {
-                        const ssData = await browser.saveFullPageScreen(fName);
+                        const ssData = await browser.saveFullPageScreen(fName, {fullPageScrollTimeout: 1500});
                         filePath = ssData.path + '/' + ssData.fileName;
                     }
 
