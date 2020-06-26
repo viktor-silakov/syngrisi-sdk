@@ -1,6 +1,7 @@
 // const api = require('./lib/api').default;
 const fs = require('fs');
 const probe = require('probe-image-size');
+const moment = require('moment');
 
 class LTDriver {
     constructor(cfg) {
@@ -109,22 +110,23 @@ class LTDriver {
                     if (classThis._params.testId === undefined)
                         throw `Test id is empty session may not have started, driver: '${JSON.stringify(classThis, null, "\t")}'`
 
-                    const fName = checkOpts.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+                    const checkName = checkOpts.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+                    const fName = moment(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS') + '_' + checkName;
                     let filePath = '';
                     if (checkOpts.filename) {
                         filePath = checkOpts.filename;
-                    } else if (checkOpts.element) {
-                        const ssPath = browser.config.rootPath + '/.tmp/' + fName + '.png'
-                        await checkOpts.element.saveScreenshot(ssPath)
-                        filePath = ssPath
+                    }
+                    else if (checkOpts.elementSelector) {
+                        filePath = browser.config.rootPath + '/.tmp/' + fName + '.png'
+                        await browser.saveElementScreenshot(filePath, checkOpts.elementSelector)
                     } else {
-                        const ssData = await browser.saveFullPageScreen(fName, {fullPageScrollTimeout: 1500});
-                        filePath = ssData.path + '/' + ssData.fileName;
+                        filePath = browser.config.rootPath + '/.tmp/' + fName + '.png'
+                        await browser.saveDocumentScreenshot(filePath)
                     }
 
                     console.log(`CHECK: ${JSON.stringify(classThis._params)}`);
                     let params = classThis._params;
-                    params.name = fName;
+                    params.name = checkName;
                     params.testid = classThis._params.testId;
                     params.browserName = classThis._params.browserName;
                     if (!checkOpts.filename) {
@@ -135,12 +137,15 @@ class LTDriver {
                         params.viewport = `${vp.width}x${vp.height}`
                     }
                     params.os = await classThis.getOS();
+
                     classThis._api.createCheck(params, filePath).then(function (result) {
                             console.log(`Check result: ${JSON.stringify(result)}`)
+                            if(result.status.includes('failed'))
+                                result.message = `To perform visual check go to url: '${classThis._config.url}checksgroupview?id=${result._id}'`
                             resolve(result);
                         },
-                        function (error) {
-                            const msg = `Cannot create check: '${error}'`
+                        function (e) {
+                            const msg = `Cannot create check: '${e}'`
                             console.error(msg);
                             reject(msg);
 
