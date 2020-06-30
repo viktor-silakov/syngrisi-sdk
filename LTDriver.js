@@ -2,6 +2,7 @@
 const fs = require('fs');
 const probe = require('probe-image-size');
 const moment = require('moment');
+const hasha = require('hasha');
 
 class LTDriver {
     constructor(cfg) {
@@ -61,7 +62,7 @@ class LTDriver {
             id: testId,
             status: 'New',
             blinking: 1000,
-            viewport: 'xXx'
+            viewport: '0x0'
         })
     }
 
@@ -115,8 +116,7 @@ class LTDriver {
                     let filePath = '';
                     if (checkOpts.filename) {
                         filePath = checkOpts.filename;
-                    }
-                    else if (checkOpts.elementSelector) {
+                    } else if (checkOpts.elementSelector) {
                         filePath = browser.config.rootPath + '/.tmp/' + fName + '.png'
                         await browser.saveElementScreenshot(filePath, checkOpts.elementSelector)
                     } else {
@@ -138,29 +138,61 @@ class LTDriver {
                     }
                     params.os = await classThis.getOS();
 
-                    classThis._api.createCheck(params, filePath).then(function (result) {
-                            console.log(`Check result: ${JSON.stringify(result)}`)
-                            if(result.status.includes('failed'))
-                                result.message = `To perform visual check go to url: '${classThis._config.url}checksgroupview?id=${result._id}'`
-                            resolve(result);
+                    function readFile(file) {
+                        return new Promise((resolve, reject) => {
+                            fs.readFile(file, function (err, data) {
+                                resolve(data);
+                            })
+                        });
+                    }
+
+                    const imgData = await readFile(filePath);
+                    const hashCode = hasha(imgData);
+
+                    function addMessageIfCheckFailed(result) {
+                        if (result.status.includes('failed'))
+                            result.message = `To perform visual check go to url: '${classThis._config.url}checksgroupview?id=${result._id}'`;
+                        return result;
+                    }
+
+                    function removeTmpFile(filePath) {
+
+                    }
+
+                    classThis._api.createCheck(params, false, hashCode).then(function (resultWithHash) {
+                            resultWithHash = addMessageIfCheckFailed(resultWithHash);
+                            console.log(`Check result Phase #1: ${JSON.stringify(resultWithHash)}`);
+                            if (resultWithHash.status === 'requiredFileData') {
+                                classThis._api.createCheck(params, filePath, hashCode).then(function (resultWithFile) {
+                                    console.log(`Check result Phase #2: ${JSON.stringify(resultWithFile)}`);
+                                    resultWithFile = addMessageIfCheckFailed(resultWithFile);
+
+                                    if (!checkOpts.filename) {
+                                        fs.unlink(filePath, (err) => {
+                                            if (err) {
+                                                console.error(err);
+                                                reject(err);
+                                                return
+                                            }
+                                        });
+                                    }
+
+                                    resolve(resultWithFile);
+                                    return
+                                })
+                            } else {
+                                resolve(resultWithHash);
+                            }
+
                         },
                         function (e) {
                             const msg = `Cannot create check: '${e}'`
                             console.error(msg);
-                            reject(msg);
-
+                            return reject(msg);
                         });
-                    if (!checkOpts.filename) {
-                        fs.unlink(filePath, (err) => {
-                            if (err) {
-                                console.error(err);
-                                reject(err);
-                            }
-                        });
-                    }
                 } catch (e) {
                     console.log(`Cannot create check with options: '${JSON.stringify(checkOpts)}'`)
-                    reject(e)
+                    return reject(e)
                 }
             }
         )
@@ -168,6 +200,10 @@ class LTDriver {
 
     set suite(params) {
         return this._params.suite = params;
+    }
+
+    setCurrentSuite(opts){
+        this._params.suite = opts;
     }
 
     async waitUntil(cb, attempts = 5, interval = 700) {
