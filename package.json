@@ -26,6 +26,7 @@
   "homepage": "https://github.com/viktor-silakov/vrs-api-client#readme",
   "dependencies": {
     "got": "^11.3.0",
+    "hasha": "^5.2.0",
     "probe-image-size": "^5.0.0"
   }
 }
