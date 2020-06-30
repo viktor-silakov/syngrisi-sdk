@@ -65,7 +65,7 @@ class VRSDriver {
         })
     }
 
-    async stopSession() {
+    async stopTestSession() {
         if (this._params.testId === undefined)
             throw `Test id is empty session may not have started, driver: '${JSON.stringify(this, null, "\t")}'`
         const testId = this._params.testId;
