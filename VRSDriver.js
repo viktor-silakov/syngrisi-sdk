@@ -46,7 +46,7 @@ class VRSDriver {
             os: classThis._params.os
         }).catch((e) => {
                 console.log('Cannot start session, error: ' + e);
-                throw e.stack.split("\n")
+                throw (e.stack ? e.stack.split("\n") : e)
             }
         )
         if (!respJson)
@@ -100,7 +100,7 @@ class VRSDriver {
             viewport: await this.getVieport()
         }).catch(function (e) {
             console.log(`Cannot stop session`)
-            throw e.stack.split("\n")
+            throw (e.stack ? e.stack.split("\n") : e)
         })
     }
 
@@ -202,7 +202,7 @@ class VRSDriver {
         return this._params.suite = params;
     }
 
-    setCurrentSuite(opts){
+    setCurrentSuite(opts) {
         this._params.suite = opts;
     }
 
