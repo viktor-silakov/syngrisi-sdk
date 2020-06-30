@@ -1,7 +1,7 @@
 // const api = require('./lib/api').default;
 const fs = require('fs');
 const probe = require('probe-image-size');
-const moment = require('moment');
+const {format} = require('date-fns')
 const hasha = require('hasha');
 
 class LTDriver {
@@ -112,7 +112,7 @@ class LTDriver {
                         throw `Test id is empty session may not have started, driver: '${JSON.stringify(classThis, null, "\t")}'`
 
                     const checkName = checkOpts.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-                    const fName = moment(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS') + '_' + checkName;
+                    const fName = format(new Date(), "yyyy-MM-dd HH:mm:ss.TTT") + '_' + checkName;
                     let filePath = '';
                     if (checkOpts.filename) {
                         filePath = checkOpts.filename;
