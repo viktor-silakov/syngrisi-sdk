@@ -47,7 +47,7 @@ class ATDriver {
         return this.ATeyes.open(brow, params.app, params.test);
     }
 
-    stopSession() {
+    stopTestSession() {
         return this.ATeyes.closeAsync();
     }
 
