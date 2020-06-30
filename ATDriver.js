@@ -30,7 +30,7 @@ class ATDriver {
         console.log(`INIT: ${JSON.stringify(this.ATeyes._configuration, 2)}`);
     }
 
-    startSession(browser, params) {
+    startTestSession(browser, params) {
         console.log(`START SESSION: ${JSON.stringify(this.ATeyes._configuration, 2)}`);
         // Create proxy for browser, to remove circular link to vDriver
         let handler = {

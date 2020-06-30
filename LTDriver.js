@@ -31,7 +31,7 @@ class LTDriver {
         return browserName
     }
 
-    async startSession(params) {
+    async startTestSession(params) {
         const classThis = this;
         classThis._params.os = await classThis.getOS();
         classThis._params.vieport = await classThis.getVieport();
