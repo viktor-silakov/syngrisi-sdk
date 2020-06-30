@@ -1,4 +1,3 @@
-// const api = require('./lib/api').default;
 const fs = require('fs');
 const probe = require('probe-image-size');
 const {format} = require('date-fns')
@@ -222,4 +221,4 @@ class VRSDriver {
     }
 }
 
-exports.LTDriver = VRSDriver;
+exports.VRSDriver = VRSDriver;
