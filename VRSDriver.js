@@ -4,7 +4,7 @@ const probe = require('probe-image-size');
 const moment = require('moment');
 const hasha = require('hasha');
 
-class LTDriver {
+class VRSDriver {
     constructor(cfg) {
         this._api = new (require('./lib/api').VRSAPI)(cfg);
         this._config = cfg;
@@ -222,4 +222,4 @@ class LTDriver {
     }
 }
 
-exports.LTDriver = LTDriver;
+exports.LTDriver = VRSDriver;
