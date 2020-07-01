@@ -154,41 +154,31 @@ class VRSDriver {
                         return result;
                     }
 
-                    function removeTmpFile(filePath) {
+                    let resultWithHash = await classThis._api.createCheck(params, false, hashCode).catch(e => reject(e))
+                    resultWithHash = addMessageIfCheckFailed(resultWithHash);
+                    console.log(`Check result Phase #1: ${JSON.stringify(resultWithHash)}`);
 
+                    if (resultWithHash.status === 'requiredFileData') {
+                        let resultWithFile = await classThis._api.createCheck(params, filePath, hashCode).catch(e => reject(e))
+                        console.log(`Check result Phase #2: ${JSON.stringify(resultWithFile)}`);
+
+                        resultWithFile = addMessageIfCheckFailed(resultWithFile);
+
+                        if (!checkOpts.filename) {
+                            fs.unlink(filePath, (err) => {
+                                if (err) {
+                                    console.error(err);
+                                    reject(err);
+                                    return
+                                }
+                            });
+                        }
+
+                        return resolve(resultWithFile);
+                    } else {
+                        resolve(resultWithHash);
                     }
 
-                    classThis._api.createCheck(params, false, hashCode).then(function (resultWithHash) {
-                            resultWithHash = addMessageIfCheckFailed(resultWithHash);
-                            console.log(`Check result Phase #1: ${JSON.stringify(resultWithHash)}`);
-                            if (resultWithHash.status === 'requiredFileData') {
-                                classThis._api.createCheck(params, filePath, hashCode).then(function (resultWithFile) {
-                                    console.log(`Check result Phase #2: ${JSON.stringify(resultWithFile)}`);
-                                    resultWithFile = addMessageIfCheckFailed(resultWithFile);
-
-                                    if (!checkOpts.filename) {
-                                        fs.unlink(filePath, (err) => {
-                                            if (err) {
-                                                console.error(err);
-                                                reject(err);
-                                                return
-                                            }
-                                        });
-                                    }
-
-                                    resolve(resultWithFile);
-                                    return
-                                })
-                            } else {
-                                resolve(resultWithHash);
-                            }
-
-                        },
-                        function (e) {
-                            const msg = `Cannot create check: '${e}'`
-                            console.error(msg);
-                            return reject(msg);
-                        });
                 } catch (e) {
                     console.log(`Cannot create check with options: '${JSON.stringify(checkOpts)}'`)
                     return reject(e)
