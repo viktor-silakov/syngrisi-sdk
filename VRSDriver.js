@@ -31,27 +31,37 @@ class VRSDriver {
         return browserName
     }
 
-    async startTestSession(params) {
+    startTestSession(params) {
         const classThis = this;
-        classThis._params.os = await classThis.getOS();
-        classThis._params.vieport = await classThis.getVieport();
-        classThis._params.browserName = await classThis.getBrowserName();
-        classThis._params.app = params.app;
-        classThis._params.test = params.test;
-        const respJson = await classThis._api.createTest({
-            name: params.test,
-            status: 'Running',
-            viewport: classThis._params.vieport,
-            browserName: classThis._params.browserName,
-            os: classThis._params.os
-        }).catch((e) => {
-                console.log('Cannot start session, error: ' + e);
-                throw (e.stack ? e.stack.split("\n") : e)
+        return new Promise(async function (resolve, reject) {
+            try {
+                classThis._params.os = await classThis.getOS();
+                classThis._params.vieport = await classThis.getVieport();
+                classThis._params.browserName = await classThis.getBrowserName();
+                classThis._params.app = params.app;
+                classThis._params.test = params.test;
+                const respJson = await classThis._api.createTest({
+                    name: params.test,
+                    status: 'Running',
+                    viewport: classThis._params.vieport,
+                    browserName: classThis._params.browserName,
+                    os: classThis._params.os
+                }).catch((e) => {
+                        console.log('Cannot start session, error: ' + e);
+                    return reject(e)
+                    // throw (e.stack ? e.stack.split("\n") : e)
+                    }
+                )
+                if (!respJson)
+                    console.error(`response is empty, params: ${JSON.stringify(params, null, "\t")}`)
+                classThis._params.testId = respJson['_id'];
+                resolve();
             }
-        )
-        if (!respJson)
-            console.error(`response is empty, params: ${JSON.stringify(params, null, "\t")}`)
-        classThis._params.testId = respJson['_id'];
+            catch (e) {
+                return reject(e)
+            }
+
+        })
     }
 
     // FOR DEBUG PURPOSE
