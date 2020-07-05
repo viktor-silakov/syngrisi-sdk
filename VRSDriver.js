@@ -125,14 +125,14 @@ class VRSDriver {
                         await browser.saveDocumentScreenshot(filePath)
                     }
 
-                    console.log(`CHECK: ${JSON.stringify(classThis._params)}`);
+                    // console.log(`CHECK: ${JSON.stringify(classThis._params)}`);
                     let params = classThis._params;
                     params.name = checkName;
                     params.testid = classThis._params.testId;
                     params.browserName = classThis._params.browserName;
 
-                    if(checkOpts.dump){
-                        params.domDump = JSON.stringify(await browser.executeAsync(getDomDump));
+                    if (checkOpts.dump) {
+                        params.domDump = await browser.executeAsync(getDomDump);
                     }
 
                     if (!checkOpts.filename) {
@@ -163,11 +163,22 @@ class VRSDriver {
 
                     let resultWithHash = await classThis._api.createCheck(params, false, hashCode).catch(e => reject(e))
                     resultWithHash = addMessageIfCheckFailed(resultWithHash);
-                    console.log(`Check result Phase #1: ${JSON.stringify(resultWithHash)}`);
+
+                    function prettyCheckResult(result) {
+                        if(!result.domDump)
+                            return  JSON.stringify(result);
+                        const dump = JSON.parse(result.domDump);
+                        let resObs = {...result};
+                        delete resObs.domDump;
+                        resObs.domDump = JSON.stringify(dump).substr(0,20) + `... and ${dump.length} elements`
+                        return JSON.stringify(resObs);
+                    }
+
+                    console.log(`Check result Phase #1: ${prettyCheckResult(resultWithHash)}`);
 
                     if (resultWithHash.status === 'requiredFileData') {
                         let resultWithFile = await classThis._api.createCheck(params, filePath, hashCode).catch(e => reject(e))
-                        console.log(`Check result Phase #2: ${JSON.stringify(resultWithFile)}`);
+                        console.log(`Check result Phase #2: ${prettyCheckResult(resultWithFile)}`);
 
                         resultWithFile = addMessageIfCheckFailed(resultWithFile);
 
