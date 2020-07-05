@@ -2,6 +2,7 @@ const fs = require('fs');
 const probe = require('probe-image-size');
 const {format} = require('date-fns')
 const hasha = require('hasha');
+const {getDomDump} = require('./lib/getDomDump')
 
 class VRSDriver {
     constructor(cfg) {
@@ -113,6 +114,7 @@ class VRSDriver {
                     const checkName = checkOpts.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
                     const fName = format(new Date(), "yyyy-MM-dd HH:mm:ss.TTT") + '_' + checkName;
                     let filePath = '';
+
                     if (checkOpts.filename) {
                         filePath = checkOpts.filename;
                     } else if (checkOpts.elementSelector) {
@@ -128,6 +130,11 @@ class VRSDriver {
                     params.name = checkName;
                     params.testid = classThis._params.testId;
                     params.browserName = classThis._params.browserName;
+
+                    if(checkOpts.dump){
+                        params.domDump = JSON.stringify(await browser.executeAsync(getDomDump));
+                    }
+
                     if (!checkOpts.filename) {
                         params.viewport = await classThis.getVieport();
                     } else {
