@@ -116,6 +116,17 @@ class VRSDriver {
 
     async check(checkOpts) {
         const classThis = this;
+
+        function prettyCheckResult(result) {
+            if(!result.domDump)
+                return  JSON.stringify(result);
+            const dump = JSON.parse(result.domDump);
+            let resObs = {...result};
+            delete resObs.domDump;
+            resObs.domDump = JSON.stringify(dump).substr(0,20) + `... and about ${dump.length} items]`
+            return JSON.stringify(resObs);
+        }
+
         return new Promise(async function (resolve, reject) {
                 try {
                     if (classThis._params.testId === undefined)
@@ -173,16 +184,6 @@ class VRSDriver {
 
                     let resultWithHash = await classThis._api.createCheck(params, false, hashCode).catch(e => reject(e))
                     resultWithHash = addMessageIfCheckFailed(resultWithHash);
-
-                    function prettyCheckResult(result) {
-                        if(!result.domDump)
-                            return  JSON.stringify(result);
-                        const dump = JSON.parse(result.domDump);
-                        let resObs = {...result};
-                        delete resObs.domDump;
-                        resObs.domDump = JSON.stringify(dump).substr(0,20) + `... and about ${dump.length} items]`
-                        return JSON.stringify(resObs);
-                    }
 
                     console.log(`Check result Phase #1: ${prettyCheckResult(resultWithHash)}`);
 
