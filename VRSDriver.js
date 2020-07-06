@@ -180,7 +180,7 @@ class VRSDriver {
                         const dump = JSON.parse(result.domDump);
                         let resObs = {...result};
                         delete resObs.domDump;
-                        resObs.domDump = JSON.stringify(dump).substr(0,20) + `... and ${dump.length} elements`
+                        resObs.domDump = JSON.stringify(dump).substr(0,20) + `... and about ${dump.length} items]`
                         return JSON.stringify(resObs);
                     }
 
@@ -208,7 +208,8 @@ class VRSDriver {
                     }
 
                 } catch (e) {
-                    console.log(`Cannot create check with options: '${JSON.stringify(checkOpts)}'`)
+                    console.log(`Cannot create check with options: '${prettyCheckResult(checkOpts)}'`)
+                    // console.log(`Cannot create check with options: '${JSON.stringify(checkOpts)}'`)
                     return reject(e)
                 }
             }
