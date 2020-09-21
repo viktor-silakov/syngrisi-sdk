@@ -48,16 +48,14 @@ class VRSDriver {
                     os: classThis._params.os
                 }).catch((e) => {
                         console.log('Cannot start session, error: ' + e);
-                    return reject(e)
-                    // throw (e.stack ? e.stack.split("\n") : e)
+                        return reject(e)
                     }
                 )
                 if (!respJson)
                     console.error(`response is empty, params: ${JSON.stringify(params, null, "\t")}`)
                 classThis._params.testId = respJson['_id'];
                 resolve();
-            }
-            catch (e) {
+            } catch (e) {
                 return reject(e)
             }
 
@@ -118,12 +116,12 @@ class VRSDriver {
         const classThis = this;
 
         function prettyCheckResult(result) {
-            if(!result.domDump)
-                return  JSON.stringify(result);
+            if (!result.domDump)
+                return JSON.stringify(result);
             const dump = JSON.parse(result.domDump);
             let resObs = {...result};
             delete resObs.domDump;
-            resObs.domDump = JSON.stringify(dump).substr(0,20) + `... and about ${dump.length} items]`
+            resObs.domDump = JSON.stringify(dump).substr(0, 20) + `... and about ${dump.length} items]`
             return JSON.stringify(resObs);
         }
 
@@ -177,8 +175,11 @@ class VRSDriver {
                     const hashCode = hasha(imgData);
 
                     function addMessageIfCheckFailed(result) {
-                        if (result.status.includes('failed'))
+                        if (result.status.includes('failed')) {
                             result.message = `To perform visual check go to url: '${classThis._config.url}checksgroupview?id=${result._id}'`;
+                            result.vrsGroupLink = `'${classThis._config.url}checksgroupview?id=${result._id}'`;
+                            result.vrsDiffLink = `'${classThis._config.url}diffview?diffid=${result.diffId}&actualid=${result.actualSnapshotId}&expectedid=${result.baselineId}&checkid=${result._id}'`;
+                        }
                         return result;
                     }
 
