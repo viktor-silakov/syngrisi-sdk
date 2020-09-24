@@ -11,7 +11,7 @@ class VRSDriver {
         this._params = {};
     }
 
-    async getVieport() {
+    async getViewport() {
         return new Promise(async function (resolve, reject) {
             const viewport = await browser.getWindowSize();
             resolve(`${viewport.width}x${viewport.height}`);
@@ -35,37 +35,45 @@ class VRSDriver {
         const classThis = this;
         return new Promise(async function (resolve, reject) {
             try {
-                classThis._params.os = await classThis.getOS();
-                classThis._params.vieport = await classThis.getVieport();
-                classThis._params.browserName = await classThis.getBrowserName();
-                classThis._params.app = params.app;
-                classThis._params.test = params.test;
+                const os = await classThis.getOS();
+                const viewport = await classThis.getViewport();
+                const browserName = await classThis.getBrowserName();
+                const testName = params.test;
+
+                Object.assign(
+                    classThis._params,
+                    {
+                        os: os,
+                        viewport: viewport,
+                        browserName: browserName,
+                        app: (await params.app),
+                        test: testName
+                    }
+                )
                 const respJson = await classThis._api.createTest({
-                    name: params.test,
+                    name: testName,
                     status: 'Running',
-                    viewport: classThis._params.vieport,
-                    browserName: classThis._params.browserName,
-                    os: classThis._params.os
+                    viewport: viewport,
+                    browserName: browserName,
+                    os: os
                 }).catch((e) => {
-                        console.log('Cannot start session, error: ' + e);
+                        console.log(`Cannot start session, error: '${e}'`);
                         return reject(e)
                     }
                 )
                 if (!respJson)
                     console.error(`response is empty, params: ${JSON.stringify(params, null, "\t")}`)
                 classThis._params.testId = respJson['_id'];
-                resolve();
+                return resolve(respJson);
             } catch (e) {
                 return reject(e)
             }
-
         })
     }
 
     // FOR DEBUG PURPOSE
     async updateTest() {
         const testId = this._params.testId;
-
         await this._api.updateTest({
             id: testId,
             status: 'New',
@@ -75,41 +83,8 @@ class VRSDriver {
     }
 
     async stopTestSession() {
-        if (this._params.testId === undefined)
-            throw `Test id is empty session may not have started, driver: '${JSON.stringify(this, null, "\t")}'`
-        const testId = this._params.testId;
-
-        await this.waitUntil(async () => {
-            return (await this._api.getChecksByTestId(testId))
-                .filter(ch => ch.status.toString() !== 'pending').length > 0;
-        });
-
-        const checksGroup = await this._api.getChecksGroupByIdent(this._params.testId)
-        const groupStatuses = Object.keys(checksGroup).map(group => checksGroup[group].status);
-        let testStatus = 'not set';
-        if (groupStatuses.some(st => st === 'failed'))
-            testStatus = 'Failed'
-        if (groupStatuses.some(st => st === 'passed')
-            && !groupStatuses.some(st => st === 'failed'))
-            testStatus = 'Passed'
-        if (groupStatuses.some(st => st === 'new')
-            && !groupStatuses.some(st => st === 'failed'))
-            testStatus = 'Passed'
-        if (groupStatuses.some(st => st === 'blinking')
-            && !groupStatuses.some(st => st === 'failed'))
-            testStatus = 'Passed'
-        if (groupStatuses.every(st => st === 'new'))
-            testStatus = 'New'
-        const blinkingCount = groupStatuses.filter(g => g === 'blinking').length;
-        await this._api.updateTest({
-            id: testId,
-            status: testStatus,
-            blinking: blinkingCount,
-            viewport: await this.getVieport()
-        }).catch(function (e) {
-            console.log(`Cannot stop session`)
-            throw (e.stack ? e.stack.split("\n") : e)
-        })
+        const result = await this._api.stopSession(this._params.testId);
+        console.log(`Session with testId: '${result._id}' was stopped`)
     }
 
     async check(checkOpts) {
@@ -146,6 +121,7 @@ class VRSDriver {
 
                     // console.log(`CHECK: ${JSON.stringify(classThis._params)}`);
                     let params = classThis._params;
+
                     params.name = checkName;
                     params.testid = classThis._params.testId;
                     params.browserName = classThis._params.browserName;
@@ -155,7 +131,7 @@ class VRSDriver {
                     }
 
                     if (!checkOpts.filename) {
-                        params.viewport = await classThis.getVieport();
+                        params.viewport = await classThis.getViewport();
                     } else {
                         const input = require('fs').createReadStream(filePath);
                         const vp = await probe(input)
@@ -198,8 +174,7 @@ class VRSDriver {
                             fs.unlink(filePath, (err) => {
                                 if (err) {
                                     console.error(err);
-                                    reject(err);
-                                    return
+                                    return reject(err);
                                 }
                             });
                         }
@@ -224,21 +199,6 @@ class VRSDriver {
 
     setCurrentSuite(opts) {
         this._params.suite = opts;
-    }
-
-    async waitUntil(cb, attempts = 5, interval = 700) {
-        let result = false;
-        let iteration = 0;
-        while (result === false) {
-            result = await cb();
-            await new Promise(r => setTimeout(r, interval));
-            iteration = iteration + 1;
-
-            if (iteration > attempts) {
-                result = true;
-            }
-        }
-        return result;
     }
 }
 
