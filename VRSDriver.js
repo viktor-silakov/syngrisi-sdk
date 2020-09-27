@@ -1,8 +1,4 @@
-const fs = require('fs');
-const probe = require('probe-image-size');
-const {format} = require('date-fns')
 const hasha = require('hasha');
-const {getDomDump} = require('./lib/getDomDump')
 
 class VRSDriver {
     constructor(cfg) {
@@ -56,16 +52,14 @@ class VRSDriver {
                     viewport: viewport,
                     browserName: browserName,
                     os: os
-                }).catch((e) => {
-                        console.log(`Cannot start session, error: '${e}'`);
-                        return reject(e)
-                    }
-                )
+                })
+
                 if (!respJson)
                     console.error(`response is empty, params: ${JSON.stringify(params, null, "\t")}`)
                 classThis._params.testId = respJson['_id'];
                 return resolve(respJson);
             } catch (e) {
+                console.log(`Cannot start session, error: '${e}'`);
                 return reject(e)
             }
         })
@@ -87,110 +81,78 @@ class VRSDriver {
         console.log(`Session with testId: '${result._id}' was stopped`)
     }
 
-    async check(checkOpts) {
+    addMessageIfCheckFailed(result) {
         const classThis = this;
-
-        function prettyCheckResult(result) {
-            if (!result.domDump)
-                return JSON.stringify(result);
-            const dump = JSON.parse(result.domDump);
-            let resObs = {...result};
-            delete resObs.domDump;
-            resObs.domDump = JSON.stringify(dump).substr(0, 20) + `... and about ${dump.length} items]`
-            return JSON.stringify(resObs);
+        if (result.status.includes('failed')) {
+            result.message = `To perform visual check go to url: '${classThis._config.url}checksgroupview?id=${result._id}'`;
+            result.vrsGroupLink = `'${classThis._config.url}checksgroupview?id=${result._id}'`;
+            result.vrsDiffLink = `'${classThis._config.url}diffview?diffid=${result.diffId}&actualid=${result.actualSnapshotId}&expectedid=${result.baselineId}&checkid=${result._id}'`;
         }
+        return result;
+    }
 
+    prettyCheckResult(result) {
+        if (!result.domDump)
+            return JSON.stringify(result);
+        const dump = JSON.parse(result.domDump);
+        let resObs = {...result};
+        delete resObs.domDump;
+        resObs.domDump = JSON.stringify(dump).substr(0, 20) + `... and about ${dump.length} items]`
+        return JSON.stringify(resObs);
+    }
+
+    async checkSnapshoot(checkName, imageBuffer, doomDump) {
+        const classThis = this;
         return new Promise(async function (resolve, reject) {
+                let params
                 try {
                     if (classThis._params.testId === undefined)
                         throw `Test id is empty session may not have started, driver: '${JSON.stringify(classThis, null, "\t")}'`
 
-                    const checkName = checkOpts.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-                    const fName = format(new Date(), "yyyy-MM-dd HH:mm:ss.TTT") + '_' + checkName;
-                    let filePath = '';
+                    params = classThis._params;
+                    Object.assign(params,
+                        {
+                            name: checkName,
+                            viewport: await classThis.getViewport(),
+                            os: await classThis.getOS(),
+                            hashCode: hasha(imageBuffer),
+                            domDump: doomDump,
+                        })
 
-                    if (checkOpts.filename) {
-                        filePath = checkOpts.filename;
-                    } else if (checkOpts.elementSelector) {
-                        filePath = browser.config.rootPath + '/.tmp/' + fName + '.png'
-                        await browser.saveElementScreenshot(filePath, checkOpts.elementSelector)
-                    } else {
-                        filePath = browser.config.rootPath + '/.tmp/' + fName + '.png'
-                        await browser.saveDocumentScreenshot(filePath)
-                    }
-
-                    // console.log(`CHECK: ${JSON.stringify(classThis._params)}`);
-                    let params = classThis._params;
-
-                    params.name = checkName;
-                    params.testid = classThis._params.testId;
-                    params.browserName = classThis._params.browserName;
-
-                    if (checkOpts.dump) {
-                        params.domDump = await browser.executeAsync(getDomDump);
-                    }
-
-                    if (!checkOpts.filename) {
-                        params.viewport = await classThis.getViewport();
-                    } else {
-                        const input = require('fs').createReadStream(filePath);
-                        const vp = await probe(input)
-                        params.viewport = `${vp.width}x${vp.height}`
-                    }
-                    params.os = await classThis.getOS();
-
-                    function readFile(file) {
-                        return new Promise((resolve, reject) => {
-                            fs.readFile(file, function (err, data) {
-                                resolve(data);
-                            })
-                        });
-                    }
-
-                    const imgData = await readFile(filePath);
-                    const hashCode = hasha(imgData);
-
-                    function addMessageIfCheckFailed(result) {
-                        if (result.status.includes('failed')) {
-                            result.message = `To perform visual check go to url: '${classThis._config.url}checksgroupview?id=${result._id}'`;
-                            result.vrsGroupLink = `'${classThis._config.url}checksgroupview?id=${result._id}'`;
-                            result.vrsDiffLink = `'${classThis._config.url}diffview?diffid=${result.diffId}&actualid=${result.actualSnapshotId}&expectedid=${result.baselineId}&checkid=${result._id}'`;
-                        }
-                        return result;
-                    }
-
-                    let resultWithHash = await classThis._api.createCheck(params, false, hashCode).catch(e => reject(e))
-                    resultWithHash = addMessageIfCheckFailed(resultWithHash);
-
-                    console.log(`Check result Phase #1: ${prettyCheckResult(resultWithHash)}`);
-
-                    if (resultWithHash.status === 'requiredFileData') {
-                        let resultWithFile = await classThis._api.createCheck(params, filePath, hashCode).catch(e => reject(e))
-                        console.log(`Check result Phase #2: ${prettyCheckResult(resultWithFile)}`);
-
-                        resultWithFile = addMessageIfCheckFailed(resultWithFile);
-
-                        if (!checkOpts.filename) {
-                            fs.unlink(filePath, (err) => {
-                                if (err) {
-                                    console.error(err);
-                                    return reject(err);
-                                }
-                            });
-                        }
-
-                        return resolve(resultWithFile);
-                    } else {
-                        resolve(resultWithHash);
-                    }
-
+                    const result = await classThis.coreCheck(imageBuffer, params)
+                    resolve(result);
                 } catch (e) {
-                    console.log(`Cannot create check with options: '${prettyCheckResult(checkOpts)}'`)
-                    // console.log(`Cannot create check with options: '${JSON.stringify(checkOpts)}'`)
+                    console.log(`Cannot create check with name: '${checkName}', parameters: '${params}, error: '${e}'`)
                     return reject(e)
                 }
             }
         )
+    }
+
+    coreCheck(imgData, params) {
+        const classThis = this;
+        return new Promise(async function (resolve, reject) {
+            try {
+                let resultWithHash = await classThis._api.createCheck(params, false, params.hashCode)
+                    .catch(e => reject(e))
+                resultWithHash = classThis.addMessageIfCheckFailed(resultWithHash);
+
+                console.log(`Check result Phase #1: ${classThis.prettyCheckResult(resultWithHash)}`);
+
+                if (resultWithHash.status === 'requiredFileData') {
+                    let resultWithFile = await classThis._api.createCheck(params, imgData, params.hashCode)
+                        .catch(e => reject(e))
+
+                    console.log(`Check result Phase #2: ${classThis.prettyCheckResult(resultWithFile)}`);
+                    resultWithFile = classThis.addMessageIfCheckFailed(resultWithFile);
+                    return resolve(resultWithFile);
+                } else {
+                    resolve(resultWithHash);
+                }
+            } catch (e) {
+                reject(e);
+            }
+        })
     }
 
     set suite(params) {
