@@ -1,8 +1,8 @@
 {
-  "name": "vrs-api-client",
-  "version": "1.0.0",
-  "description": "Client side for Visual Regression Service",
-  "main": "ATDriver.js",
+  "name": "syngrisi-sdk",
+  "version": "1.0.1",
+  "description": "Syngrisi SDK",
+  "main": "VRSDriver.js",
   "directories": {
     "lib": "lib"
   },
@@ -11,19 +11,20 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/viktor-silakov/vrs-api-client.git"
+    "url": "git+git@github.com:viktor-silakov/vrs-sdk.git"
   },
   "keywords": [
     "visual",
     "regression",
-    "test"
+    "test",
+    "SDK"
   ],
   "author": "Viktar Silakou",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/viktor-silakov/vrs-api-client/issues"
+    "url": "https://github.com/viktor-silakov/vrs-sdk/issues"
   },
-  "homepage": "https://github.com/viktor-silakov/vrs-api-client#readme",
+  "homepage": "https://github.com/viktor-silakov/vrs-sdk/blob/master/README.md",
   "dependencies": {
     "date-fns": "^2.14.0",
     "got": "^11.3.0",
