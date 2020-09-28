@@ -1,4 +1,4 @@
-## SDK for Visual regression service
+## SDK for Syngrisi tool
 
 ### Usage
 
