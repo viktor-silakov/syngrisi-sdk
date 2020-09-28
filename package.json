@@ -1,7 +1,7 @@
 {
-  "name": "syngrisi-sdk",
+  "name": "@syngrisi/syngrisi-wdio-sdk",
   "version": "1.0.1",
-  "description": "Syngrisi SDK",
+  "description": "Syngrisi WebdriverIO SDK",
   "main": "VRSDriver.js",
   "directories": {
     "lib": "lib"
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+git@github.com:viktor-silakov/vrs-sdk.git"
+    "url": "git+ssh://git@github.com/viktor-silakov/vrs-sdk.git"
   },
   "keywords": [
     "visual",
@@ -30,5 +30,6 @@
     "got": "^11.3.0",
     "hasha": "^5.2.0",
     "probe-image-size": "^5.0.0"
-  }
+  },
+  "devDependencies": {}
 }

@@ -1,39 +1,66 @@
 ## SDK for Syngrisi tool
 
-### Usage
+### Base Flow Overview
+There is 3 basic step for particular test:
+![syngrisi flow](./docs/flow.png)
+
+### Usage Example
 
 ```javascript
+const syngrisi = require('@syngrisi/syngrisi-sdk');
+const vrsHost = 'localhost';
+const vrsPort = 3000;
 const VRSConfig = {
     url: `http://${vrsHost}:${vrsPort}/`
 }
+const {remote} = require('webdriverio');
 
-const VRSDriver = new (require('./src/lib/VRSDrivers/VRSDriver').VRSDriver)(VRSConfig);
-
-browser.vDriver = VRSDriver;
-
-(async function () {
-    // Set up suite
-    await browser.vDriver.setCurrentSuite({
-        name: 'Suite Name',
-        id: 'suite_id'
+;(async () => {
+    global.browser = await remote({
+        capabilities: {browserName: 'chrome'}
     })
+    // 0. Add Syngrisi driver to browser object
+    browser.vDriver = new syngrisi.vDriver(VRSConfig);
 
-    // Start tests
+    // 1. Start Syngrisi test session
     await browser.vDriver.startTestSession({
         app: 'Test Application',
-        test: 'Test Name'
+        test: 'My first Syngrisi test',
+        suite: 'My first Syngrisi suite'
     });
 
-    // perform check
-    // dump: true - send DOM dump during a check
-    // elementSelector: '#element-id' make check of particular element
-    await browser.VRSDriver.check({
-        name: 'Check Name',
-        elementSelector: '#element-id',
-        dump: true
-    });
-    await browser.VRSDriver.stopTestSession();
-})()
+    await browser.navigateTo('https://www.google.com/ncr')
+
+    // 2.1. perform visual check
+    const screenshot = new Buffer(await browser.takeScreenshot(), 'base64');
+
+    await browser.vDriver.checkSnapshoot(
+        'My Check',
+        screenshot
+    );
+
+    const searchInput = await browser.$('[name=q]');
+    await searchInput.setValue('Σύγκριση');
+
+    const searchBtn = await browser.$('input[value="Google Search"]');
+    searchBtn.waitForClickable()
+    await searchBtn.click();
+
+    // 2.2 perform another visual check
+    const screenshot2 = new Buffer(await browser.takeScreenshot(), 'base64');
+
+    await browser.vDriver.checkSnapshoot(
+        'My another Check',
+        screenshot2
+    );
+
+    // 2.3 stop test Session
+    await browser.vDriver.stopTestSession();
+
+})().catch((err) => {
+    console.error(err)
+    throw err
+}).finally(() => browser.deleteSession());
 ```
 
 ### TODO 

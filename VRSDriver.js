@@ -1,6 +1,6 @@
 const hasha = require('hasha');
 
-class VRSDriver {
+class vDriver {
     constructor(cfg) {
         this._api = new (require('./lib/api').VRSAPI)(cfg);
         this._config = cfg;
@@ -31,6 +31,20 @@ class VRSDriver {
         const classThis = this;
         return new Promise(async function (resolve, reject) {
             try {
+                console.log(params.suite)
+                console.log(params.suite)
+                console.log(params.suite)
+                console.log(params.suite)
+                if(!classThis._params.suite){
+                    classThis.setCurrentSuite({
+                        name: params.suite
+                    })
+                }
+
+                // classThis._params.suite = classThis._params.suite ? classThis._params.suite : {}
+                // classThis._params.suite['name'] = params.suite ? params.suite : classThis._params.suite.name
+                // console.log('!!!!!');
+                // console.log(JSON.stringify(classThis._params))
                 const os = await classThis.getOS();
                 const viewport = await classThis.getViewport();
                 const browserName = await classThis.getBrowserName();
@@ -43,9 +57,12 @@ class VRSDriver {
                         viewport: viewport,
                         browserName: browserName,
                         app: (await params.app),
-                        test: testName
+                        test: testName,
                     }
                 )
+
+                console.log()
+
                 const respJson = await classThis._api.createTest({
                     name: testName,
                     status: 'Running',
@@ -164,4 +181,4 @@ class VRSDriver {
     }
 }
 
-exports.VRSDriver = VRSDriver;
+exports.vDriver = vDriver;
