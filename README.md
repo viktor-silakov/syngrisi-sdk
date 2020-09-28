@@ -4,10 +4,14 @@
 There is 3 basic step for particular test:
 ![syngrisi flow](./docs/flow.png)
 
+### Installation
+```shell script
+npm i @syngrisi/syngrisi-wdio-sdk --save-dev
+```
 ### Usage Example
 
 ```javascript
-const syngrisi = require('@syngrisi/syngrisi-sdk');
+const syngrisi = require('@syngrisi/syngrisi-wdio-sdk');
 const vrsHost = 'localhost';
 const vrsPort = 3000;
 const VRSConfig = {
@@ -43,7 +47,7 @@ const {remote} = require('webdriverio');
     await searchInput.setValue('Σύγκριση');
 
     const searchBtn = await browser.$('input[value="Google Search"]');
-    searchBtn.waitForClickable()
+    await (searchBtn.waitForClickable())
     await searchBtn.click();
 
     // 2.2 perform another visual check
