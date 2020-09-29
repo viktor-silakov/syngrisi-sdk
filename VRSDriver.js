@@ -31,20 +31,12 @@ class vDriver {
         const classThis = this;
         return new Promise(async function (resolve, reject) {
             try {
-                console.log(params.suite)
-                console.log(params.suite)
-                console.log(params.suite)
-                console.log(params.suite)
                 if(!classThis._params.suite){
                     classThis.setCurrentSuite({
-                        name: params.suite
+                        name: params.suite || 'Others'
                     })
                 }
 
-                // classThis._params.suite = classThis._params.suite ? classThis._params.suite : {}
-                // classThis._params.suite['name'] = params.suite ? params.suite : classThis._params.suite.name
-                // console.log('!!!!!');
-                // console.log(JSON.stringify(classThis._params))
                 const os = await classThis.getOS();
                 const viewport = await classThis.getViewport();
                 const browserName = await classThis.getBrowserName();
