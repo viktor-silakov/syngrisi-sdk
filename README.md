@@ -14,9 +14,7 @@ npm i @syngrisi/syngrisi-wdio-sdk --save-dev
 const syngrisi = require('@syngrisi/syngrisi-wdio-sdk');
 const vrsHost = 'localhost';
 const vrsPort = 3000;
-const VRSConfig = {
-    url: `http://${vrsHost}:${vrsPort}/`
-}
+const VRSConfig = { url: `http://${vrsHost}:${vrsPort}/`};
 const {remote} = require('webdriverio');
 
 ;(async () => {
