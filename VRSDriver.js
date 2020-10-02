@@ -172,8 +172,8 @@ class vDriver {
         this._params.suite = opts;
     }
 
-    static setCurrentRunIdIfNotSet(runId = faker.random.uuid()) {
-        process.env['RUN_ID'] = process.env['RUN_ID'] ? process.env['RUN_ID'] : runId;
+    static setCurrentRunNameIfNotSet(runName = faker.lorem.slug(5) + '_' + faker.random.uuid()) {
+        process.env['RUN_NAME'] = process.env['RUN_NAME'] ? process.env['RUN_NAME'] : runName;
     }
 }
 
