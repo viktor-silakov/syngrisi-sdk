@@ -65,5 +65,9 @@ const {remote} = require('webdriverio');
 }).finally(() => browser.deleteSession());
 ```
 
+ ### Environment variables
+
+`RUN_NAME=<desired run name>` - use such variable to set up specific run name, by default it will generate automatically
+
 ### TODO 
 * Add complete SDK API documentation
