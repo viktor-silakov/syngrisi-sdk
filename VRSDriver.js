@@ -172,15 +172,8 @@ class vDriver {
         this._params.suite = opts;
     }
 
-    // get currentRunId() {
-    //     return process.env['RUN_ID'];
-    // }
-
     static setCurrentRunIdIfNotSet(runId = faker.random.uuid()) {
         process.env['RUN_ID'] = process.env['RUN_ID'] ? process.env['RUN_ID'] : runId;
-        console.log('METH')
-        console.log(process.env['RUN_ID'])
-        console.log('METH')
     }
 }
 
