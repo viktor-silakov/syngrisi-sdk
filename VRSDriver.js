@@ -1,4 +1,5 @@
 const hasha = require('hasha');
+const faker = require('faker');
 
 class vDriver {
     constructor(cfg) {
@@ -31,7 +32,7 @@ class vDriver {
         const classThis = this;
         return new Promise(async function (resolve, reject) {
             try {
-                if(!classThis._params.suite){
+                if (!classThis._params.suite) {
                     classThis.setCurrentSuite({
                         name: params.suite || 'Others'
                     })
@@ -53,14 +54,13 @@ class vDriver {
                     }
                 )
 
-                console.log()
-
                 const respJson = await classThis._api.createTest({
                     name: testName,
                     status: 'Running',
                     viewport: viewport,
                     browserName: browserName,
-                    os: os
+                    os: os,
+                    run: params.run ? params.run : ''
                 })
 
                 if (!respJson)
@@ -110,7 +110,7 @@ class vDriver {
         return JSON.stringify(resObs);
     }
 
-    async checkSnapshoot(checkName, imageBuffer, doomDump) {
+    async checkSnapshoot(checkName, imageBuffer, domDump) {
         const classThis = this;
         return new Promise(async function (resolve, reject) {
                 let params
@@ -125,7 +125,7 @@ class vDriver {
                             viewport: await classThis.getViewport(),
                             os: await classThis.getOS(),
                             hashCode: hasha(imageBuffer),
-                            domDump: doomDump,
+                            domDump: domDump,
                         })
 
                     const result = await classThis.coreCheck(imageBuffer, params)
@@ -170,6 +170,17 @@ class vDriver {
 
     setCurrentSuite(opts) {
         this._params.suite = opts;
+    }
+
+    // get currentRunId() {
+    //     return process.env['RUN_ID'];
+    // }
+
+    static setCurrentRunIdIfNotSet(runId = faker.random.uuid()) {
+        process.env['RUN_ID'] = process.env['RUN_ID'] ? process.env['RUN_ID'] : runId;
+        console.log('METH')
+        console.log(process.env['RUN_ID'])
+        console.log('METH')
     }
 }
 
