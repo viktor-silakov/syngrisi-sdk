@@ -27,6 +27,7 @@
   "homepage": "https://github.com/viktor-silakov/vrs-sdk/blob/master/README.md",
   "dependencies": {
     "date-fns": "^2.14.0",
+    "faker": "^5.1.0",
     "got": "^11.3.0",
     "hasha": "^5.2.0",
     "probe-image-size": "^5.0.0"
