@@ -172,7 +172,8 @@ class vDriver {
         this._params.suite = opts;
     }
 
-    static setCurrentRunNameIfNotSet(runName = faker.lorem.slug(5) + '_' + faker.random.uuid()) {
+    // Generate random Run name value if environment variable is not set
+    static generateRunNameIfNotSet(runName = faker.lorem.slug(5) + '_' + faker.random.uuid()) {
         process.env['RUN_NAME'] = process.env['RUN_NAME'] ? process.env['RUN_NAME'] : runName;
     }
 }
