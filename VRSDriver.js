@@ -16,7 +16,10 @@ class vDriver {
     }
 
     async getOS() {
-        return await browser.execute(() => navigator.platform);
+        const platform = await browser.execute(() => navigator.platform);
+        if (process.env['ENV_POSTFIX'])
+            return platform + '_' + process.env['ENV_POSTFIX'];
+        return platform
     }
 
     async getBrowserName() {
