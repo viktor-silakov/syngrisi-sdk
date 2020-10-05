@@ -67,7 +67,8 @@ const {remote} = require('webdriverio');
 
  ### Environment variables
 
-`RUN_NAME=<desired run name>` - use such variable to set up specific run name, by default it will generate automatically
+`RUN_NAME` - use such variable to set up specific run name, by default it will generate automatically
+`ENV_POSTFIX` - will add to platform property, you can use this to set some unique platform name for particular environment
 
 ### TODO 
 * Add complete SDK API documentation
