@@ -31,6 +31,13 @@ class vDriver {
         return browserName
     }
 
+    async getBrowserVersion() {
+        return new Promise(
+            function (resolve, reject) {
+                return resolve((browser.capabilities.browserVersion.split('.'))[0]);
+            })
+    }
+
     startTestSession(params) {
         const classThis = this;
         return new Promise(async function (resolve, reject) {
@@ -44,6 +51,7 @@ class vDriver {
                 const os = await classThis.getOS();
                 const viewport = await classThis.getViewport();
                 const browserName = await classThis.getBrowserName();
+                const browserVersion = await classThis.getBrowserVersion();
                 const testName = params.test;
 
                 Object.assign(
@@ -52,6 +60,7 @@ class vDriver {
                         os: os,
                         viewport: viewport,
                         browserName: browserName,
+                        browserVersion: browserVersion,
                         app: (await params.app),
                         test: testName,
                     }
@@ -62,6 +71,7 @@ class vDriver {
                     status: 'Running',
                     viewport: viewport,
                     browserName: browserName,
+                    browserVersion: browserVersion,
                     os: os,
                     run: params.run ? params.run : ''
                 })
@@ -129,6 +139,7 @@ class vDriver {
                             os: await classThis.getOS(),
                             hashCode: hasha(imageBuffer),
                             domDump: domDump,
+                            browserVersion: await classThis.getBrowserVersion(),
                         })
 
                     const result = await classThis.coreCheck(imageBuffer, params)
