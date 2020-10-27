@@ -65,10 +65,45 @@ const {remote} = require('webdriverio');
 }).finally(() => browser.deleteSession());
 ```
 
- ### Environment variables
+ ###Environment variables
 
 `RUN_NAME` - use such variable to set up specific run name, by default it will generate automatically
 `ENV_POSTFIX` - will add to platform property, you can use this to set some unique platform name for particular environment
 
-### TODO 
-* Add complete SDK API documentation
+###SDK API
+
+####vDriver class
+
+- `vDriver(cfg)` (constructor) - initialize vDriver instance
+
+#####Parameters
+
+| Name | Type | Details |
+|------|------|---------|
+|`cfg`|`object`| e.g.: `{url: 'http://localhost:3000'}`|
+
+
+
+- `startTestSession(params)` - starts of the test session
+
+
+#####Parameters
+    
+| Name | Type | Details |
+|------|------|---------|
+|`params`|`object`| e.g: {app: 'App Name', <br>test: 'Test Name',<br>suite: 'Suite Name'}|
+
+
+- `checkSnapshoot(checkName, imageBuffer, domDump)` - create snapshot and send to Syngrisi API
+
+
+#####Parameters
+    
+| Name | Type | Details |
+|------|------|---------|
+|`checkName`|`String`| eg.: 'Check Name'|
+|`imageBuffer`|`Buffer`| File buffer|
+|`domDump`|`String`| Web Page DOM Dump JSON string, to get properly dump use `getDomDump()` method  |
+
+- `stopTestSession()` - stop of the test session
+
