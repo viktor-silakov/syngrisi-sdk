@@ -1,5 +1,7 @@
 const hasha = require('hasha');
 const faker = require('faker');
+const {getDomDump} = require("../../../src/lib/VRSDrivers/lib/getDomDump");
+module.exports.getDomDump = getDomDump;
 
 class vDriver {
     constructor(cfg) {
