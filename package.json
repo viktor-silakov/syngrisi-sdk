@@ -1,6 +1,6 @@
 {
   "name": "@syngrisi/syngrisi-wdio-sdk",
-  "version": "1.0.7",
+  "version": "1.0.7f",
   "description": "Syngrisi WebdriverIO SDK",
   "main": "VRSDriver.js",
   "directories": {
