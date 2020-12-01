@@ -18,7 +18,7 @@ class vDriver {
     }
 
     async getOS() {
-        const platform = await browser.execute(() => navigator.platform);
+        const platform = browser.capabilities.platform || await browser.execute(() => navigator.platform);
         if (process.env['ENV_POSTFIX'])
             return platform + '_' + process.env['ENV_POSTFIX'];
         return platform
@@ -33,10 +33,12 @@ class vDriver {
         return browserName
     }
 
+    // return major version of browser
     async getBrowserVersion() {
         return new Promise(
             function (resolve, reject) {
-                return resolve((browser.capabilities.browserVersion.split('.'))[0]);
+                const version = browser.capabilities.browserVersion || browser.capabilities.version
+                return resolve(version.split('.')[0]);
             })
     }
 
@@ -83,7 +85,7 @@ class vDriver {
                 classThis._params.testId = respJson['_id'];
                 return resolve(respJson);
             } catch (e) {
-                console.log(`Cannot start session, error: '${e}'`);
+                console.log(`Cannot start session, error: '${e}' \n '${e.stack || ''}'`);
                 return reject(e)
             }
         })
