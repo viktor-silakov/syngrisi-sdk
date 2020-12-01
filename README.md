@@ -65,18 +65,18 @@ const {remote} = require('webdriverio');
 }).finally(() => browser.deleteSession());
 ```
 
- ###Environment variables
+### Environment variables
 
 `RUN_NAME` - use such variable to set up specific run name, by default it will generate automatically
 `ENV_POSTFIX` - will add to platform property, you can use this to set some unique platform name for particular environment
 
-###SDK API
+### SDK API
 
-####vDriver class
+#### vDriver class
 
 - `vDriver(cfg)` (constructor) - initialize vDriver instance
 
-#####Parameters
+##### Parameters
 
 | Name | Type | Details |
 |------|------|---------|
@@ -87,7 +87,7 @@ const {remote} = require('webdriverio');
 - `startTestSession(params)` - starts of the test session
 
 
-#####Parameters
+##### Parameters
     
 | Name | Type | Details |
 |------|------|---------|
@@ -97,7 +97,7 @@ const {remote} = require('webdriverio');
 - `checkSnapshoot(checkName, imageBuffer, domDump)` - create snapshot and send to Syngrisi API
 
 
-#####Parameters
+##### Parameters
     
 | Name | Type | Details |
 |------|------|---------|
