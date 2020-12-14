@@ -11,14 +11,22 @@ class vDriver {
     }
 
     async getViewport() {
+        if (this.isAndroid())
+            return new Promise(async function (resolve, reject) {
+                return resolve(browser.capabilities.deviceScreenSize);
+            })
         return new Promise(async function (resolve, reject) {
             const viewport = await browser.getWindowSize();
-            resolve(`${viewport.width}x${viewport.height}`);
+            return resolve(`${viewport.width}x${viewport.height}`);
         })
     }
 
     async getOS() {
-        const platform = browser.capabilities.platform || await browser.execute(() => navigator.platform);
+        let platform;
+        if (this.isAndroid() || this.isIos())
+            platform = browser.options.capabilities['bstack:options'].deviceName
+        else
+            platform = browser.capabilities.platform || await browser.execute(() => navigator.platform);
         if (process.env['ENV_POSTFIX'])
             return platform + '_' + process.env['ENV_POSTFIX'];
         return platform
@@ -33,11 +41,24 @@ class vDriver {
         return browserName
     }
 
+    isAndroid() {
+        return (browser.options.capabilities.browserName === 'Android');
+    }
+
+    isIos() {
+        return (browser.options.capabilities.browserName === 'iPhone');
+    }
+
     // return major version of browser
     async getBrowserVersion() {
+        const that = this;
         return new Promise(
             function (resolve, reject) {
-                const version = browser.capabilities.browserVersion || browser.capabilities.version
+                let version;
+                if (that.isAndroid() || that.isIos())
+                    version = browser.options.capabilities['bstack:options'].osVersion
+                else
+                    version = browser.capabilities.browserVersion || browser.capabilities.version
                 return resolve(version.split('.')[0]);
             })
     }
