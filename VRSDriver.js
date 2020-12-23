@@ -17,7 +17,11 @@ class vDriver {
             })
         return new Promise(async function (resolve, reject) {
             const viewport = await browser.getWindowSize();
-            return resolve(`${viewport.width}x${viewport.height}`);
+            if(viewport && viewport.width && viewport.height)
+            {
+                return resolve(`${viewport.width}x${viewport.height}`);
+            }
+            return resolve('0x0');
         })
     }
 
