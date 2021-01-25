@@ -135,7 +135,8 @@ class vDriver {
     addMessageIfCheckFailed(result) {
         const classThis = this;
         if (result.status.includes('failed')) {
-            result.message = `To perform visual check go to url: '${classThis._config.url}checksgroupview?id=${result._id}'`;
+            result.message = `To perform visual check go to url: '${classThis._config.url}checksgroupview?id=${result._id}'\n
+            '${classThis._config.url}diffview?diffid=${result.diffId}&actualid=${result.actualSnapshotId}&expectedid=${result.baselineId}&checkid=${result._id}'`;
             result.vrsGroupLink = `'${classThis._config.url}checksgroupview?id=${result._id}'`;
             result.vrsDiffLink = `'${classThis._config.url}diffview?diffid=${result.diffId}&actualid=${result.actualSnapshotId}&expectedid=${result.baselineId}&checkid=${result._id}'`;
         }
