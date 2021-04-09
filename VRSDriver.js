@@ -17,8 +17,7 @@ class vDriver {
             })
         return new Promise(async function (resolve, reject) {
             const viewport = await browser.getWindowSize();
-            if(viewport && viewport.width && viewport.height)
-            {
+            if (viewport && viewport.width && viewport.height) {
                 return resolve(`${viewport.width}x${viewport.height}`);
             }
             return resolve('0x0');
@@ -67,35 +66,50 @@ class vDriver {
             })
     }
 
+    async getBrowserFullVersion() {
+        const that = this;
+        return new Promise(
+            function (resolve, reject) {
+                let version;
+                if (that.isAndroid() || that.isIos())
+                    version = browser.options.capabilities['bstack:options'].osVersion
+                else
+                    version = browser.capabilities.browserVersion || browser.capabilities.version
+                return resolve(version);
+            })
+    }
+
     startTestSession(params) {
-        const classThis = this;
+        const $this = this;
         return new Promise(async function (resolve, reject) {
             try {
-                if (!classThis._params.suite) {
-                    classThis.setCurrentSuite({
+                if (!$this._params.suite) {
+                    $this.setCurrentSuite({
                         name: params.suite || 'Others'
                     })
                 }
 
-                const os = await classThis.getOS();
-                const viewport = await classThis.getViewport();
-                const browserName = await classThis.getBrowserName();
-                const browserVersion = await classThis.getBrowserVersion();
+                const os = await $this.getOS();
+                const viewport = await $this.getViewport();
+                const browserName = await $this.getBrowserName();
+                const browserVersion = await $this.getBrowserVersion();
+                const browserFullVersion = await $this.getBrowserFullVersion();
                 const testName = params.test;
 
                 Object.assign(
-                    classThis._params,
+                    $this._params,
                     {
                         os: os,
                         viewport: viewport,
                         browserName: browserName,
                         browserVersion: browserVersion,
+                        browserFullVersion: browserFullVersion,
                         app: (await params.app),
                         test: testName,
                     }
                 )
 
-                const respJson = await classThis._api.createTest({
+                const respJson = await $this._api.createTest({
                     name: testName,
                     status: 'Running',
                     viewport: viewport,
@@ -107,7 +121,7 @@ class vDriver {
 
                 if (!respJson)
                     console.error(`response is empty, params: ${JSON.stringify(params, null, "\t")}`)
-                classThis._params.testId = respJson['_id'];
+                $this._params.testId = respJson['_id'];
                 return resolve(respJson);
             } catch (e) {
                 console.log(`Cannot start session, error: '${e}' \n '${e.stack || ''}'`);
@@ -133,12 +147,12 @@ class vDriver {
     }
 
     addMessageIfCheckFailed(result) {
-        const classThis = this;
+        const $this = this;
         if (result.status.includes('failed')) {
-            result.message = `To perform visual check go to url: '${classThis._config.url}checksgroupview?id=${result._id}'\n
-            '${classThis._config.url}diffview?diffid=${result.diffId}&actualid=${result.actualSnapshotId}&expectedid=${result.baselineId}&checkid=${result._id}'`;
-            result.vrsGroupLink = `'${classThis._config.url}checksgroupview?id=${result._id}'`;
-            result.vrsDiffLink = `'${classThis._config.url}diffview?diffid=${result.diffId}&actualid=${result.actualSnapshotId}&expectedid=${result.baselineId}&checkid=${result._id}'`;
+            result.message = `To perform visual check go to url: '${$this._config.url}checksgroupview?id=${result._id}'\n
+            '${$this._config.url}diffview?diffid=${result.diffId}&actualid=${result.actualSnapshotId}&expectedid=${result.baselineId}&checkid=${result._id}'`;
+            result.vrsGroupLink = `'${$this._config.url}checksgroupview?id=${result._id}'`;
+            result.vrsDiffLink = `'${$this._config.url}diffview?diffid=${result.diffId}&actualid=${result.actualSnapshotId}&expectedid=${result.baselineId}&checkid=${result._id}'`;
         }
         return result;
     }
@@ -154,25 +168,26 @@ class vDriver {
     }
 
     async checkSnapshoot(checkName, imageBuffer, domDump) {
-        const classThis = this;
+        const $this = this;
         return new Promise(async function (resolve, reject) {
                 let params
                 try {
-                    if (classThis._params.testId === undefined)
-                        throw `Test id is empty session may not have started, driver: '${JSON.stringify(classThis, null, "\t")}'`
+                    if ($this._params.testId === undefined)
+                        throw `Test id is empty session may not have started, driver: '${JSON.stringify($this, null, "\t")}'`
 
-                    params = classThis._params;
+                    params = $this._params;
                     Object.assign(params,
                         {
                             name: checkName,
-                            viewport: await classThis.getViewport(),
-                            os: await classThis.getOS(),
+                            viewport: await $this.getViewport(),
+                            os: await $this.getOS(),
                             hashCode: hasha(imageBuffer),
                             domDump: domDump,
-                            browserVersion: await classThis.getBrowserVersion(),
+                            browserVersion: await $this.getBrowserVersion(),
+                            browserFullVersion: await $this.getBrowserFullVersion(),
                         })
 
-                    const result = await classThis.coreCheck(imageBuffer, params)
+                    const result = await $this.coreCheck(imageBuffer, params)
                     resolve(result);
                 } catch (e) {
                     console.log(`Cannot create check with name: '${checkName}', parameters: '${params}, error: '${e}'`)
@@ -183,21 +198,21 @@ class vDriver {
     }
 
     coreCheck(imgData, params) {
-        const classThis = this;
+        const $this = this;
         return new Promise(async function (resolve, reject) {
             try {
-                let resultWithHash = await classThis._api.createCheck(params, false, params.hashCode)
+                let resultWithHash = await $this._api.createCheck(params, false, params.hashCode)
                     .catch(e => reject(e))
-                resultWithHash = classThis.addMessageIfCheckFailed(resultWithHash);
+                resultWithHash = $this.addMessageIfCheckFailed(resultWithHash);
 
-                console.log(`Check result Phase #1: ${classThis.prettyCheckResult(resultWithHash)}`);
+                console.log(`Check result Phase #1: ${$this.prettyCheckResult(resultWithHash)}`);
 
                 if (resultWithHash.status === 'requiredFileData') {
-                    let resultWithFile = await classThis._api.createCheck(params, imgData, params.hashCode)
+                    let resultWithFile = await $this._api.createCheck(params, imgData, params.hashCode)
                         .catch(e => reject(e))
 
-                    console.log(`Check result Phase #2: ${classThis.prettyCheckResult(resultWithFile)}`);
-                    resultWithFile = classThis.addMessageIfCheckFailed(resultWithFile);
+                    console.log(`Check result Phase #2: ${$this.prettyCheckResult(resultWithFile)}`);
+                    resultWithFile = $this.addMessageIfCheckFailed(resultWithFile);
                     return resolve(resultWithFile);
                 } else {
                     resolve(resultWithHash);
