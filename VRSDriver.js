@@ -1,6 +1,6 @@
 const hasha = require('hasha');
 const faker = require('faker');
-const {getDomDump} = require("./lib/getDomDump");
+const { getDomDump } = require('./lib/getDomDump');
 module.exports.getDomDump = getDomDump;
 
 class vDriver {
@@ -11,44 +11,54 @@ class vDriver {
     }
 
     async getViewport() {
-        if (this.isAndroid())
+        if (this.isAndroid()) {
             return new Promise(async function (resolve, reject) {
                 return resolve(browser.capabilities.deviceScreenSize);
-            })
+            });
+        }
         return new Promise(async function (resolve, reject) {
             const viewport = await browser.getWindowSize();
             if (viewport && viewport.width && viewport.height) {
                 return resolve(`${viewport.width}x${viewport.height}`);
             }
             return resolve('0x0');
-        })
+        });
     }
 
     async getOS() {
         let platform;
-        if (this.isAndroid() || this.isIos())
-            platform = browser.options.capabilities['bstack:options'].deviceName
-        else
+        if (this.isAndroid() || this.isIos()) {
+            // console.log({ isAndroid: this.isAndroid() });
+            // console.log({ isIos: this.isIos() });
+            platform = browser.options.capabilities['bstack:options'].deviceName;
+        } else {
             platform = browser.capabilities.platform || await browser.execute(() => navigator.platform);
-        if (process.env['ENV_POSTFIX'])
+        }
+
+        if (process.env['ENV_POSTFIX']) {
             return platform + '_' + process.env['ENV_POSTFIX'];
-        return platform
+        }
+        return platform;
     }
 
     async getBrowserName() {
         let browserName = browser.capabilities.browserName;
-        let chromeOpts = browser.options.capabilities['goog:chromeOptions']
+        let chromeOpts = browser.options.capabilities['goog:chromeOptions'];
         if (chromeOpts && chromeOpts.args && chromeOpts.args.includes('--headless')) {
-            browserName = browserName + " [HEADLESS]"
+            browserName = browserName + ' [HEADLESS]';
         }
-        return browserName
+        return browserName;
     }
 
     isAndroid() {
+        // if (browser.execute(() => /(android)/i.test(navigator.userAgent))) return true;
         return (browser.options.capabilities.browserName === 'Android');
     }
 
     isIos() {
+        if (browser.execute(() => navigator.platform) === 'iPhone') {
+            return true;
+        }
         return (browser.options.capabilities.browserName === 'iPhone');
     }
 
@@ -58,12 +68,13 @@ class vDriver {
         return new Promise(
             function (resolve, reject) {
                 let version;
-                if (that.isAndroid() || that.isIos())
-                    version = browser.options.capabilities['bstack:options'].osVersion
-                else
-                    version = browser.capabilities.browserVersion || browser.capabilities.version
+                if (that.isAndroid() || that.isIos()) {
+                    version = browser.options.capabilities['bstack:options'].osVersion;
+                } else {
+                    version = browser.capabilities.browserVersion || browser.capabilities.version;
+                }
                 return resolve(version.split('.')[0]);
-            })
+            });
     }
 
     async getBrowserFullVersion() {
@@ -71,22 +82,29 @@ class vDriver {
         return new Promise(
             function (resolve, reject) {
                 let version;
-                if (that.isAndroid() || that.isIos())
-                    version = browser.options.capabilities['bstack:options'].osVersion
-                else
-                    version = browser.capabilities.browserVersion || browser.capabilities.version
+                if (that.isAndroid() || that.isIos()) {
+                    version = browser.options.capabilities['bstack:options'].osVersion;
+                } else {
+                    version = browser.capabilities.browserVersion || browser.capabilities.version;
+                }
                 return resolve(version);
-            })
+            });
     }
 
-    startTestSession(params) {
+    startTestSession(params, apikey) {
         const $this = this;
+
         return new Promise(async function (resolve, reject) {
             try {
+                if (!params.run || !params.runident || !params.test) {
+                    console.error(`ERROR: One of mandatory parameters aren't present (run, runident or test), params: '${JSON.stringify(params)}'`);
+                    return reject(new Error(`ERROR: One of mandatory parameters aren't present (run, runident or test), params: '${JSON.stringify(params)}'`));
+                }
+
                 if (!$this._params.suite) {
                     $this.setCurrentSuite({
                         name: params.suite || 'Others'
-                    })
+                    });
                 }
 
                 const os = await $this.getOS();
@@ -106,9 +124,9 @@ class vDriver {
                         browserFullVersion: browserFullVersion,
                         app: (await params.app),
                         test: testName,
+                        branch: params.branch,
                     }
-                )
-
+                );
                 const respJson = await $this._api.createTest({
                     name: testName,
                     status: 'Running',
@@ -116,34 +134,32 @@ class vDriver {
                     browserName: browserName,
                     browserVersion: browserVersion,
                     os: os,
-                    run: params.run ? params.run : ''
-                })
+                    run: params.run,
+                    runident: params.runident,
+                    tags: params.tags,
+                    branch: params.branch,
+                }, apikey)
+                    .catch((e) => {
+                        console.log(`Cannot start session, API error: '${e}' \n '${e.stack || ''}'`);
+                        return reject(e);
+                    });
 
-                if (!respJson)
-                    console.error(`response is empty, params: ${JSON.stringify(params, null, "\t")}`)
+                if (!respJson) {
+                    console.error(`response is empty, params: ${JSON.stringify(params, null, '\t')}`);
+                }
                 $this._params.testId = respJson['_id'];
+
                 return resolve(respJson);
             } catch (e) {
                 console.log(`Cannot start session, error: '${e}' \n '${e.stack || ''}'`);
-                return reject(e)
+                return reject(e);
             }
-        })
+        });
     }
 
-    // FOR DEBUG PURPOSE
-    async updateTest() {
-        const testId = this._params.testId;
-        await this._api.updateTest({
-            id: testId,
-            status: 'New',
-            blinking: 1000,
-            viewport: '0x0'
-        })
-    }
-
-    async stopTestSession() {
-        const result = await this._api.stopSession(this._params.testId);
-        console.log(`Session with testId: '${result._id}' was stopped`)
+    async stopTestSession(apikey) {
+        const result = await this._api.stopSession(this._params.testId, apikey);
+        console.log(`Session with testId: '${result._id}' was stopped`);
     }
 
     addMessageIfCheckFailed(result) {
@@ -158,22 +174,25 @@ class vDriver {
     }
 
     prettyCheckResult(result) {
-        if (!result.domDump)
+        if (!result.domDump) {
             return JSON.stringify(result);
+        }
         const dump = JSON.parse(result.domDump);
-        let resObs = {...result};
+        let resObs = { ...result };
         delete resObs.domDump;
-        resObs.domDump = JSON.stringify(dump).substr(0, 20) + `... and about ${dump.length} items]`
+        resObs.domDump = JSON.stringify(dump)
+            .substr(0, 20) + `... and about ${dump.length} items]`;
         return JSON.stringify(resObs);
     }
 
-    async checkSnapshoot(checkName, imageBuffer, domDump) {
+    async checkSnapshoot(checkName, imageBuffer, domDump, apikey) {
         const $this = this;
         return new Promise(async function (resolve, reject) {
-                let params
+                let params;
                 try {
-                    if ($this._params.testId === undefined)
-                        throw `Test id is empty session may not have started, driver: '${JSON.stringify($this, null, "\t")}'`
+                    if ($this._params.testId === undefined) {
+                        throw `Test id is empty session may not have started, driver: '${JSON.stringify($this, null, '\t')}'`;
+                    }
 
                     params = $this._params;
                     Object.assign(params,
@@ -185,31 +204,31 @@ class vDriver {
                             domDump: domDump,
                             browserVersion: await $this.getBrowserVersion(),
                             browserFullVersion: await $this.getBrowserFullVersion(),
-                        })
-
-                    const result = await $this.coreCheck(imageBuffer, params)
+                        });
+                    const result = await $this.coreCheck(imageBuffer, params, apikey);
                     resolve(result);
                 } catch (e) {
-                    console.log(`Cannot create check with name: '${checkName}', parameters: '${params}, error: '${e}'`)
-                    return reject(e)
+                    console.log(`Cannot create check with name: '${checkName}', parameters: '${JSON.stringify(params)}, error: '${e}'`);
+                    return reject(e);
                 }
             }
-        )
+        );
     }
 
-    coreCheck(imgData, params) {
+    coreCheck(imgData, params, apikey) {
         const $this = this;
         return new Promise(async function (resolve, reject) {
             try {
-                let resultWithHash = await $this._api.createCheck(params, false, params.hashCode)
-                    .catch(e => reject(e))
+                let resultWithHash = await $this._api.createCheck(params, false, params.hashCode, apikey)
+                    .catch(e => reject(e));
+
                 resultWithHash = $this.addMessageIfCheckFailed(resultWithHash);
 
                 console.log(`Check result Phase #1: ${$this.prettyCheckResult(resultWithHash)}`);
 
                 if (resultWithHash.status === 'requiredFileData') {
-                    let resultWithFile = await $this._api.createCheck(params, imgData, params.hashCode)
-                        .catch(e => reject(e))
+                    let resultWithFile = await $this._api.createCheck(params, imgData, params.hashCode, apikey)
+                        .catch(e => reject(e));
 
                     console.log(`Check result Phase #2: ${$this.prettyCheckResult(resultWithFile)}`);
                     resultWithFile = $this.addMessageIfCheckFailed(resultWithFile);
@@ -220,7 +239,7 @@ class vDriver {
             } catch (e) {
                 reject(e);
             }
-        })
+        });
     }
 
     set suite(params) {
@@ -231,9 +250,13 @@ class vDriver {
         this._params.suite = opts;
     }
 
-    // Generate random Run name value if environment variable is not set
-    static generateRunNameIfNotSet(runName = faker.lorem.slug(5) + '_' + faker.random.uuid()) {
-        process.env['RUN_NAME'] = process.env['RUN_NAME'] ? process.env['RUN_NAME'] : runName;
+    static generateRunName(runName = faker.lorem.slug(5) + '_' + faker.random.uuid()) {
+        return faker.lorem.sentence(4)
+            .replace('.', '');
+    }
+
+    static generateRunIdent() {
+        return faker.random.uuid();
     }
 }
 
