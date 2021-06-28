@@ -33,14 +33,17 @@ class vDriver {
             platform = browser.options.capabilities['bstack:options'].deviceName;
         } else {
             let navPlatform
-            try {
-                navPlatform = await browser.execute(() => navigator.platform);
-            } catch (e) {
-                console.log(new Date());
-                await browser.pause(700);
-                console.log(new Date());
-                navPlatform = await browser.execute(() => navigator.platform);
+            for (let x = 0; x < 5; x++) {
+                try {
+                    navPlatform = await browser.execute(() => navigator.platform);
+                    if (navPlatform) break;
+                } catch (e) {
+                    console.log(`Error - cannot get the platform #${x}: '${e}'`)
+                    await browser.pause(500);
+                    navPlatform = await browser.execute(() => navigator.platform);
+                }
             }
+
             platform = browser.capabilities.platform || navPlatform;
         }
 
