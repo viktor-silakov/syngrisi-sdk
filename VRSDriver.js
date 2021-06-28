@@ -32,7 +32,16 @@ class vDriver {
             // console.log({ isIos: this.isIos() });
             platform = browser.options.capabilities['bstack:options'].deviceName;
         } else {
-            platform = browser.capabilities.platform || await browser.execute(() => navigator.platform);
+            let navPlatform
+            try {
+                navPlatform = await browser.execute(() => navigator.platform);
+            } catch (e) {
+                console.log(new Date());
+                await browser.pause(700);
+                console.log(new Date());
+                navPlatform = await browser.execute(() => navigator.platform);
+            }
+            platform = browser.capabilities.platform || navPlatform;
         }
 
         if (process.env['ENV_POSTFIX']) {
