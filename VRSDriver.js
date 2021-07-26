@@ -25,6 +25,17 @@ class vDriver {
         });
     }
 
+    transformOs(os) {
+        const transform = {
+            Win32: 'WINDOWS',
+            win32: 'WINDOWS',
+            windows: 'WINDOWS',
+            Windows: 'WINDOWS',
+            MacIntel: 'macOS',
+        }
+        return transform[os] || os;
+    }
+
     async getOS() {
         let platform;
         if (this.isAndroid() || this.isIos()) {
@@ -50,7 +61,7 @@ class vDriver {
         if (process.env['ENV_POSTFIX']) {
             return platform + '_' + process.env['ENV_POSTFIX'];
         }
-        return platform;
+        return this.transformOs(platform);
     }
 
     async getBrowserName() {
