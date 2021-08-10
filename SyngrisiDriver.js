@@ -3,9 +3,9 @@ const faker = require('faker');
 const { getDomDump } = require('./lib/getDomDump');
 module.exports.getDomDump = getDomDump;
 
-class vDriver {
+class syngrisiDriver {
     constructor(cfg) {
-        this._api = new (require('./lib/api').VRSAPI)(cfg);
+        this._api = new (require('./lib/api').syngrisiApi)(cfg);
         this._config = cfg;
         this._params = {};
     }
@@ -272,15 +272,6 @@ class vDriver {
     setCurrentSuite(opts) {
         this._params.suite = opts;
     }
-
-    static generateRunName(runName = faker.lorem.slug(5) + '_' + faker.random.uuid()) {
-        return faker.lorem.sentence(4)
-            .replace('.', '');
-    }
-
-    static generateRunIdent() {
-        return faker.random.uuid();
-    }
 }
 
-exports.vDriver = vDriver;
+exports.syngrisiDriver = syngrisiDriver;
