@@ -188,10 +188,11 @@ class syngrisiDriver {
     addMessageIfCheckFailed(result) {
         const $this = this;
         if (result.status.includes('failed')) {
+            const checkView = `${$this._config.url}checkview?id=${result._id}`;
             result.message = `To perform visual check go to url: '${$this._config.url}checksgroupview?id=${result._id}'\n
-            '${$this._config.url}diffview?diffid=${result.diffId}&actualid=${result.actualSnapshotId}&expectedid=${result.baselineId}&checkid=${result._id}'`;
+            '${checkView}'`;
             result.vrsGroupLink = `'${$this._config.url}checksgroupview?id=${result._id}'`;
-            result.vrsDiffLink = `'${$this._config.url}diffview?diffid=${result.diffId}&actualid=${result.actualSnapshotId}&expectedid=${result.baselineId}&checkid=${result._id}'`;
+            result.vrsDiffLink = `'${checkView}'`;
         }
         return result;
     }
