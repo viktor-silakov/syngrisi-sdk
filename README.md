@@ -36,7 +36,7 @@ const {remote} = require('webdriverio');
     // 2.1. perform visual check
     const screenshot = new Buffer(await browser.takeScreenshot(), 'base64');
 
-    await browser.vDriver.checkSnapshoot(
+    await browser.vDriver.checkSnapshot(
         'My Check',
         screenshot
     );
@@ -51,7 +51,7 @@ const {remote} = require('webdriverio');
     // 2.2 perform another visual check
     const screenshot2 = new Buffer(await browser.takeScreenshot(), 'base64');
 
-    await browser.vDriver.checkSnapshoot(
+    await browser.vDriver.checkSnapshot(
         'My another Check',
         screenshot2
     );
@@ -60,7 +60,7 @@ const {remote} = require('webdriverio');
     await browser.vDriver.stopTestSession();
 
 })().catch((err) => {
-    console.error(err)
+    log.error(err)
     throw err
 }).finally(() => browser.deleteSession());
 ```
@@ -94,7 +94,7 @@ const {remote} = require('webdriverio');
 |`params`|`object`| e.g: {app: 'App Name', <br>test: 'Test Name',<br>suite: 'Suite Name'}|
 
 
-- `checkSnapshoot(checkName, imageBuffer, domDump)` - create snapshot and send to Syngrisi API
+- `checkSnapshot(checkName, imageBuffer, domDump)` - create snapshot and send to Syngrisi API
 
 
 ##### Parameters

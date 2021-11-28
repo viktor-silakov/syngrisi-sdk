@@ -1,55 +1,58 @@
+/* eslint-disable object-shorthand,require-jsdoc,no-underscore-dangle */
 const hasha = require('hasha');
-const faker = require('faker');
+const { default: logger } = require('@wdio/logger');
 const { getDomDump } = require('./lib/getDomDump');
+const utils = require('./lib/utils');
+
+const log = logger('syngrisi-wdio-sdk');
 module.exports.getDomDump = getDomDump;
 
-class syngrisiDriver {
+class SyngrisiDriver {
     constructor(cfg) {
-        this._api = new (require('./lib/api').syngrisiApi)(cfg);
-        this._config = cfg;
-        this._params = {};
+        this.api = new (require('./lib/api').SyngrisiApi)(cfg);
+        this.config = cfg;
+        this.params = {};
     }
 
-    async getViewport() {
-        if (this.isAndroid()) {
-            return new Promise(async function (resolve, reject) {
-                return resolve(browser.capabilities.deviceScreenSize);
-            });
+    static async getViewport() {
+        if (SyngrisiDriver.isAndroid()) {
+            return browser.capabilities.deviceScreenSize;
         }
-        return new Promise(async function (resolve, reject) {
-            const viewport = await browser.getWindowSize();
-            if (viewport && viewport.width && viewport.height) {
-                return resolve(`${viewport.width}x${viewport.height}`);
-            }
-            return resolve('0x0');
-        });
+        const viewport = await browser.getWindowSize();
+        if (viewport && viewport.width && viewport.height) {
+            return `${viewport.width}x${viewport.height}`;
+        }
+        return '0x0';
     }
 
-    transformOs(os) {
+    static transformOs(platform) {
+        const lowercasePlatform = platform.toLowerCase();
         const transform = {
-            Win32: 'WINDOWS',
             win32: 'WINDOWS',
             windows: 'WINDOWS',
-            Windows: 'WINDOWS',
             MacIntel: 'macOS',
-        }
-        return transform[os] || os;
+        };
+        return transform[lowercasePlatform] || platform;
     }
 
-    async getOS() {
+    // not really os but more wide therm 'platform'
+    static async getOS() {
         let platform;
-        if (this.isAndroid() || this.isIos()) {
-            // console.log({ isAndroid: this.isAndroid() });
-            // console.log({ isIos: this.isIos() });
-            platform = browser.options.capabilities['bstack:options'].deviceName;
+        if (SyngrisiDriver.isAndroid() || SyngrisiDriver.isIos()) {
+            platform = browser.options?.capabilities['bstack:options']?.deviceName
+                || browser.options?.capabilities['appium:deviceName']
+                || browser.options?.capabilities?.deviceName;
+            if (!platform) {
+                throw new Error(`Cannot get the platform of your device: ${JSON.stringify(browser.options?.capabilities)}`);
+            }
         } else {
-            let navPlatform
+            let navPlatform;
             for (let x = 0; x < 5; x++) {
                 try {
                     navPlatform = await browser.execute(() => navigator.platform);
                     if (navPlatform) break;
                 } catch (e) {
-                    console.log(`Error - cannot get the platform #${x}: '${e}'`)
+                    log.error(`Error - cannot get the platform #${x}: '${e}'`);
                     await browser.pause(500);
                     navPlatform = await browser.execute(() => navigator.platform);
                 }
@@ -58,221 +61,178 @@ class syngrisiDriver {
             platform = browser.capabilities.platform || navPlatform;
         }
 
-        if (process.env['ENV_POSTFIX']) {
-            return platform + '_' + process.env['ENV_POSTFIX'];
+        if (process.env.ENV_POSTFIX) {
+            return `${platform}_${process.env.ENV_POSTFIX}`;
         }
-        return this.transformOs(platform);
+        return SyngrisiDriver.transformOs(platform);
     }
 
-    async getBrowserName() {
-        let browserName = browser.capabilities.browserName;
-        let chromeOpts = browser.options.capabilities['goog:chromeOptions'];
+    static getBrowserName() {
+        let { browserName } = browser.capabilities;
+        const chromeOpts = browser.options.capabilities['goog:chromeOptions'];
         if (chromeOpts && chromeOpts.args && chromeOpts.args.includes('--headless')) {
-            browserName = browserName + ' [HEADLESS]';
+            browserName += ' [HEADLESS]';
         }
         return browserName;
     }
 
-    isAndroid() {
-        // if (browser.execute(() => /(android)/i.test(navigator.userAgent))) return true;
+    static isAndroid() {
         return (browser.options.capabilities.browserName === 'Android');
     }
 
-    isIos() {
-        if (browser.execute(() => navigator.platform) === 'iPhone') {
-            return true;
+    static isIos() {
+        return (browser.execute(() => navigator.platform) === 'iPhone')
+            || (browser.options.capabilities?.platformName?.toLowerCase() === 'ios')
+            || (browser.options.capabilities?.browserName === 'iPhone')
+            || false;
+    }
+
+    static getBrowserFullVersion() {
+        let version;
+        if (SyngrisiDriver.isAndroid() || SyngrisiDriver.isIos()) {
+            version = browser.options?.capabilities['bstack:options']?.osVersion
+                || browser.capabilities?.version
+                || browser.options?.capabilities['appium:deviceName'].platformVersion;
+        } else {
+            version = browser.capabilities?.browserVersion || browser.capabilities?.version;
         }
-        return (browser.options.capabilities.browserName === 'iPhone');
+        return version;
     }
 
     // return major version of browser
-    async getBrowserVersion() {
-        const that = this;
-        return new Promise(
-            function (resolve, reject) {
-                let version;
-                if (that.isAndroid() || that.isIos()) {
-                    version = browser.options.capabilities['bstack:options'].osVersion;
-                } else {
-                    version = browser.capabilities.browserVersion || browser.capabilities.version;
-                }
-                return resolve(version.split('.')[0]);
-            });
+    static getBrowserVersion() {
+        const fullVersion = SyngrisiDriver.getBrowserFullVersion();
+        if (!fullVersion.includes('.')) {
+            return fullVersion;
+        }
+        return fullVersion.split('.')[0];
     }
 
-    async getBrowserFullVersion() {
-        const that = this;
-        return new Promise(
-            function (resolve, reject) {
-                let version;
-                if (that.isAndroid() || that.isIos()) {
-                    version = browser.options.capabilities['bstack:options'].osVersion;
-                } else {
-                    version = browser.capabilities.browserVersion || browser.capabilities.version;
-                }
-                return resolve(version);
-            });
-    }
-
-    startTestSession(params, apikey) {
+    async startTestSession(params, apikey) {
         const $this = this;
+        try {
+            if (!params.run || !params.runident || !params.test) {
+                throw new Error(`error startTestSession one of mandatory parameters aren't present (run, runident or test), params: '${JSON.stringify(params)}'`);
+            }
 
-        return new Promise(async function (resolve, reject) {
-            try {
-                if (!params.run || !params.runident || !params.test) {
-                    console.error(`ERROR: One of mandatory parameters aren't present (run, runident or test), params: '${JSON.stringify(params)}'`);
-                    return reject(new Error(`ERROR: One of mandatory parameters aren't present (run, runident or test), params: '${JSON.stringify(params)}'`));
-                }
+            if (!$this.params.suite) {
+                $this.setCurrentSuite({
+                    name: params.suite || 'Others',
+                });
+            }
 
-                if (!$this._params.suite) {
-                    $this.setCurrentSuite({
-                        name: params.suite || 'Others'
-                    });
-                }
+            const os = await SyngrisiDriver.getOS();
+            const viewport = await SyngrisiDriver.getViewport();
+            const browserName = await SyngrisiDriver.getBrowserName();
+            const browserVersion = await SyngrisiDriver.getBrowserVersion();
+            const browserFullVersion = await SyngrisiDriver.getBrowserFullVersion();
+            const testName = params.test;
 
-                const os = await $this.getOS();
-                const viewport = await $this.getViewport();
-                const browserName = await $this.getBrowserName();
-                const browserVersion = await $this.getBrowserVersion();
-                const browserFullVersion = await $this.getBrowserFullVersion();
-                const testName = params.test;
-
-                Object.assign(
-                    $this._params,
-                    {
-                        os: os,
-                        viewport: viewport,
-                        browserName: browserName,
-                        browserVersion: browserVersion,
-                        browserFullVersion: browserFullVersion,
-                        app: (await params.app),
-                        test: testName,
-                        branch: params.branch,
-                    }
-                );
-                const respJson = await $this._api.createTest({
-                    name: testName,
-                    status: 'Running',
+            Object.assign(
+                $this.params,
+                {
+                    os: os,
                     viewport: viewport,
                     browserName: browserName,
                     browserVersion: browserVersion,
-                    os: os,
-                    run: params.run,
-                    runident: params.runident,
-                    tags: params.tags,
+                    browserFullVersion: browserFullVersion,
+                    app: (await params.app),
+                    test: testName,
                     branch: params.branch,
-                }, apikey)
-                    .catch((e) => {
-                        console.log(`Cannot start session, API error: '${e}' \n '${e.stack || ''}'`);
-                        return reject(e);
-                    });
-
-                if (!respJson) {
-                    console.error(`response is empty, params: ${JSON.stringify(params, null, '\t')}`);
                 }
-                $this._params.testId = respJson['_id'];
-
-                return resolve(respJson);
-            } catch (e) {
-                console.log(`Cannot start session, error: '${e}' \n '${e.stack || ''}'`);
-                return reject(e);
+            );
+            const respJson = await $this.api.createTest({
+                name: testName,
+                status: 'Running',
+                viewport: viewport,
+                browserName: browserName,
+                browserVersion: browserVersion,
+                os: os,
+                run: params.run,
+                runident: params.runident,
+                tags: params.tags,
+                branch: params.branch,
+            }, apikey);
+            if (!respJson) {
+                throw new Error(`response is empty, params: ${JSON.stringify(params, null, '\t')}`);
             }
-        });
+            $this.params.testId = respJson._id;
+
+            return respJson;
+        } catch (e) {
+            log.error(`Cannot start session, error: '${e}' \n '${e.stack || ''}'`);
+            throw new Error(`Cannot start session, error: '${e}' \n '${e.stack || ''}'`);
+        }
     }
 
     async stopTestSession(apikey) {
-        const result = await this._api.stopSession(this._params.testId, apikey);
-        console.log(`Session with testId: '${result._id}' was stopped`);
+        const result = await this.api.stopSession(this.params.testId, apikey);
+        log.info(`Session with testId: '${result._id}' was stopped`);
     }
 
     addMessageIfCheckFailed(result) {
         const $this = this;
-        if (result.status.includes('failed')) {
-            const checkView = `${$this._config.url}checkview?id=${result._id}`;
-            result.message = `To perform visual check go to url: '${$this._config.url}checksgroupview?id=${result._id}'\n
+        const patchedResult = result;
+        if (patchedResult.status.includes('failed')) {
+            const checkView = `${$this.config.url}checkview?id=${patchedResult._id}`;
+            patchedResult.message = `To perform the visual check go to url: '${$this.config.url}checksgroupview?id=${patchedResult._id}'\n
             '${checkView}'`;
-            result.vrsGroupLink = `'${$this._config.url}checksgroupview?id=${result._id}'`;
-            result.vrsDiffLink = `'${checkView}'`;
+            patchedResult.vrsGroupLink = `'${$this.config.url}checksgroupview?id=${patchedResult._id}'`;
+            patchedResult.vrsDiffLink = `'${checkView}'`;
         }
-        return result;
+        return patchedResult;
     }
 
-    prettyCheckResult(result) {
-        if (!result.domDump) {
-            return JSON.stringify(result);
+    async checkSnapshot(checkName, imageBuffer, domDump, apikey) {
+        const $this = this;
+        let params;
+        try {
+            if ($this.params.testId === undefined) {
+                throw new Error(`Test id is empty session may not have started, driver: '${JSON.stringify($this, null, '\t')}'`);
+            }
+
+            params = $this.params;
+            Object.assign(
+                params,
+                {
+                    name: checkName,
+                    viewport: await SyngrisiDriver.getViewport(),
+                    os: await SyngrisiDriver.getOS(),
+                    hashCode: hasha(imageBuffer),
+                    domDump: domDump,
+                    browserVersion: await SyngrisiDriver.getBrowserVersion(),
+                    browserFullVersion: await SyngrisiDriver.getBrowserFullVersion(),
+                }
+            );
+            const result = await $this.coreCheck(imageBuffer, params, apikey);
+            return result;
+        } catch (e) {
+            throw new Error(`Cannot create check with name: '${checkName}', parameters: '${JSON.stringify(params)}, error: '${e}'`);
         }
-        const dump = JSON.parse(result.domDump);
-        let resObs = { ...result };
-        delete resObs.domDump;
-        resObs.domDump = JSON.stringify(dump)
-            .substr(0, 20) + `... and about ${dump.length} items]`;
-        return JSON.stringify(resObs);
     }
 
-    async checkSnapshoot(checkName, imageBuffer, domDump, apikey) {
+    async coreCheck(imgData, params, apikey) {
         const $this = this;
-        return new Promise(async function (resolve, reject) {
-                let params;
-                try {
-                    if ($this._params.testId === undefined) {
-                        throw `Test id is empty session may not have started, driver: '${JSON.stringify($this, null, '\t')}'`;
-                    }
+        try {
+            let resultWithHash = await $this.api.createCheck(params, false, params.hashCode, apikey);
+            resultWithHash = $this.addMessageIfCheckFailed(resultWithHash);
 
-                    params = $this._params;
-                    Object.assign(params,
-                        {
-                            name: checkName,
-                            viewport: await $this.getViewport(),
-                            os: await $this.getOS(),
-                            hashCode: hasha(imageBuffer),
-                            domDump: domDump,
-                            browserVersion: await $this.getBrowserVersion(),
-                            browserFullVersion: await $this.getBrowserFullVersion(),
-                        });
-                    const result = await $this.coreCheck(imageBuffer, params, apikey);
-                    resolve(result);
-                } catch (e) {
-                    console.log(`Cannot create check with name: '${checkName}', parameters: '${JSON.stringify(params)}, error: '${e}'`);
-                    return reject(e);
-                }
+            log.info(`Check result Phase #1: ${utils.prettyCheckResult(resultWithHash)}`);
+            if (resultWithHash.status === 'requiredFileData') {
+                let resultWithFile = await $this.api.createCheck(params, imgData, params.hashCode, apikey);
+                log.info(`Check result Phase #2: ${utils.prettyCheckResult(resultWithFile)}`);
+                resultWithFile = $this.addMessageIfCheckFailed(resultWithFile);
+                return resultWithFile;
             }
-        );
-    }
-
-    coreCheck(imgData, params, apikey) {
-        const $this = this;
-        return new Promise(async function (resolve, reject) {
-            try {
-                let resultWithHash = await $this._api.createCheck(params, false, params.hashCode, apikey)
-                    .catch(e => reject(e));
-
-                resultWithHash = $this.addMessageIfCheckFailed(resultWithHash);
-
-                console.log(`Check result Phase #1: ${$this.prettyCheckResult(resultWithHash)}`);
-
-                if (resultWithHash.status === 'requiredFileData') {
-                    let resultWithFile = await $this._api.createCheck(params, imgData, params.hashCode, apikey)
-                        .catch(e => reject(e));
-
-                    console.log(`Check result Phase #2: ${$this.prettyCheckResult(resultWithFile)}`);
-                    resultWithFile = $this.addMessageIfCheckFailed(resultWithFile);
-                    return resolve(resultWithFile);
-                } else {
-                    resolve(resultWithHash);
-                }
-            } catch (e) {
-                reject(e);
-            }
-        });
-    }
-
-    set suite(params) {
-        return this._params.suite = params;
+            return resultWithHash;
+        } catch (e) {
+            throw new Error(`error in coreCheck: ${e}`);
+        }
     }
 
     setCurrentSuite(opts) {
-        this._params.suite = opts;
+        this.params.suite = opts;
     }
 }
 
-exports.syngrisiDriver = syngrisiDriver;
+exports.SyngrisiDriver = SyngrisiDriver;
