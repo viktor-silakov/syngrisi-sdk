@@ -30,7 +30,7 @@ class SyngrisiDriver {
         const transform = {
             win32: 'WINDOWS',
             windows: 'WINDOWS',
-            MacIntel: 'macOS',
+            macintel: 'macOS',
         };
         return transform[lowercasePlatform] || platform;
     }
