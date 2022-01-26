@@ -1,6 +1,6 @@
 {
   "name": "@syngrisi/syngrisi-wdio-sdk",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "Syngrisi WebdriverIO SDK",
   "main": "SyngrisiDriver.js",
   "directories": {
