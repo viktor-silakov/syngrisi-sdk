@@ -77,7 +77,7 @@ class SyngrisiDriver {
     }
 
     static isAndroid() {
-        return (browser.options.capabilities.browserName === 'Android');
+        return (browser.options.capabilities.browserName === 'Android' || browser.options.capabilities.platformName === 'Android');
     }
 
     static isIos() {
@@ -92,9 +92,12 @@ class SyngrisiDriver {
         if (SyngrisiDriver.isAndroid() || SyngrisiDriver.isIos()) {
             version = browser.options?.capabilities['bstack:options']?.osVersion
                 || browser.capabilities?.version
-                || browser.options?.capabilities['appium:deviceName'].platformVersion;
+                || browser.options?.capabilities.platformVersion;
         } else {
             version = browser.capabilities?.browserVersion || browser.capabilities?.version;
+        }
+        if (!version) {
+            throw new Error('Cannot get Browser Version, try to check "capabilities.version", "capabilities.platformVersion" or "capabilities.browserVersion"');
         }
         return version;
     }
