@@ -114,8 +114,8 @@ class SyngrisiDriver {
     async startTestSession(params, apikey) {
         const $this = this;
         try {
-            if (!params.run || !params.runident || !params.test) {
-                throw new Error(`error startTestSession one of mandatory parameters aren't present (run, runident or test), params: '${JSON.stringify(params)}'`);
+            if (!params.run || !params.runident || !params.test || !params.branch) {
+                throw new Error(`error startTestSession one of mandatory parameters aren't present (run, runident, branch or test), params: '${JSON.stringify(params)}'`);
             }
 
             if (!$this.params.suite) {
