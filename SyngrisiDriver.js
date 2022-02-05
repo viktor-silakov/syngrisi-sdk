@@ -1,4 +1,4 @@
-/* eslint-disable object-shorthand,require-jsdoc,no-underscore-dangle */
+/* eslint-disable object-shorthand,require-jsdoc,no-underscore-dangle,prefer-destructuring */
 const hasha = require('hasha');
 const { default: logger } = require('@wdio/logger');
 const { getDomDump } = require('./lib/getDomDump');
@@ -188,13 +188,12 @@ class SyngrisiDriver {
 
     async checkSnapshot(checkName, imageBuffer, domDump, apikey) {
         const $this = this;
-        let params;
+        const params = $this.params;
+        if ($this.params.testId === undefined) {
+            throw new Error('The test id is empty, the session may not have started yet:'
+                + `check name: '${checkName}', driver: '${JSON.stringify($this, null, '\t')}'`);
+        }
         try {
-            if ($this.params.testId === undefined) {
-                throw new Error(`Test id is empty session may not have started, driver: '${JSON.stringify($this, null, '\t')}'`);
-            }
-
-            params = $this.params;
             Object.assign(
                 params,
                 {
@@ -207,8 +206,7 @@ class SyngrisiDriver {
                     browserFullVersion: await SyngrisiDriver.getBrowserFullVersion(),
                 }
             );
-            const result = await $this.coreCheck(imageBuffer, params, apikey);
-            return result;
+            return $this.coreCheck(imageBuffer, params, apikey);
         } catch (e) {
             throw new Error(`Cannot create check with name: '${checkName}', parameters: '${JSON.stringify(params)}, error: '${e}'`);
         }
