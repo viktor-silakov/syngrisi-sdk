@@ -111,12 +111,36 @@ class SyngrisiDriver {
         return fullVersion.split('.')[0];
     }
 
+    identArgsGuard(params) {
+        this.params.ident.forEach((item) => {
+            if (!params[item]) {
+                throw new Error(`Wrong parameters for ident, the ${item} property is empty`);
+            }
+        });
+    }
+
+    /**
+     * Check if the baseline exist with specific ident and specific hashcode
+     * @param {Buffer} imageBuffer - image buffer
+     * @param {Object} params - object that must be related to ident array
+     * @param {string} apikey - apikey
+     * @returns {Promise<Object>}
+     */
+    async checkIfBaselineExist(imageBuffer, params, apikey) {
+        this.identArgsGuard(params);
+        const $this = this;
+        const imgHash = hasha(imageBuffer);
+        return $this.api.checkIfBaselineExist(imgHash, params, apikey);
+    }
+
     async startTestSession(params, apikey) {
         const $this = this;
         try {
             if (!params.run || !params.runident || !params.test || !params.branch || !params.app) {
                 throw new Error(`error startTestSession one of mandatory parameters aren't present (run, runident, branch, app  or test), params: '${JSON.stringify(params)}'`);
             }
+
+            $this.params.ident = await $this.api.getIdent(apikey);
 
             if (!$this.params.suite) {
                 $this.setCurrentSuite({
