@@ -119,20 +119,6 @@ class SyngrisiDriver {
         });
     }
 
-    /**
-     * Check if the baseline exist with specific ident and specific hashcode
-     * @param {Buffer} imageBuffer - image buffer
-     * @param {Object} params - object that must be related to ident array
-     * @param {string} apikey - apikey
-     * @returns {Promise<Object>}
-     */
-    async checkIfBaselineExist(imageBuffer, params, apikey) {
-        this.identArgsGuard(params);
-        const $this = this;
-        const imgHash = hasha(imageBuffer);
-        return $this.api.checkIfBaselineExist(imgHash, params, apikey);
-    }
-
     async startTestSession(params, apikey) {
         const $this = this;
         try {
@@ -211,29 +197,62 @@ class SyngrisiDriver {
         return patchedResult;
     }
 
-    async checkSnapshot(checkName, imageBuffer, domDump, apikey) {
+    /**
+     * Check if the baseline exist with specific ident and specific hashcode
+     * @param {Buffer} imageBuffer  image buffer
+     * @param {string} name         name of check
+     * @param {Object} params       object that must be related to ident array
+     * @param {string} apikey       apikey
+     * @returns {Promise<Object>}
+     */
+    // ident:  ['name', 'viewport', 'browserName', 'os', 'app', 'branch'];
+    async checkIfBaselineExist(imageBuffer, name, apikey, params) {
+        this.identArgsGuard(params);
         const $this = this;
-        const params = $this.params;
+        const imgHash = hasha(imageBuffer);
+        const opts = {
+            name: name,
+            viewport: params.viewport || await SyngrisiDriver.getViewport(),
+            browserName: $this.params.browserName || await SyngrisiDriver.getBrowserVersion(),
+            os: $this.params.os || await SyngrisiDriver.getOS(),
+            app: $this.params.app,
+            branch: $this.params.branch,
+            hashCode: hasha(imageBuffer),
+        };
+        Object.assign(opts, params);
+        return $this.api.checkIfBaselineExist(imgHash, opts, apikey);
+    }
+
+    async check(checkName, imageBuffer, apikey, params, domDump) {
+        const $this = this;
         if ($this.params.testId === undefined) {
             throw new Error('The test id is empty, the session may not have started yet:'
                 + `check name: '${checkName}', driver: '${JSON.stringify($this, null, '\t')}'`);
         }
+        let opts = {};
         try {
+            // ident:  ['name', 'viewport', 'browserName', 'os', 'app', 'branch'];
+            opts = {
+                testId: $this.params.testId,
+                suite: $this.params.suite,
+                name: checkName,
+                viewport: await SyngrisiDriver.getViewport(),
+                browserName: $this.params.browserName || await SyngrisiDriver.getBrowserVersion(),
+                browserVersion: $this.params.browserVersion || await SyngrisiDriver.getBrowserVersion(),
+                browserFullVersion: $this.params.browserFullVersion || await SyngrisiDriver.getBrowserFullVersion(),
+                os: $this.params.os || await SyngrisiDriver.getOS(),
+                app: $this.params.app,
+                branch: $this.params.branch,
+                hashCode: hasha(imageBuffer),
+                domDump: domDump,
+            };
             Object.assign(
+                opts,
                 params,
-                {
-                    name: checkName,
-                    viewport: await SyngrisiDriver.getViewport(),
-                    os: await SyngrisiDriver.getOS(),
-                    hashCode: hasha(imageBuffer),
-                    domDump: domDump,
-                    browserVersion: await SyngrisiDriver.getBrowserVersion(),
-                    browserFullVersion: await SyngrisiDriver.getBrowserFullVersion(),
-                }
             );
-            return $this.coreCheck(imageBuffer, params, apikey);
+            return $this.coreCheck(imageBuffer, opts, apikey);
         } catch (e) {
-            throw new Error(`Cannot create check with name: '${checkName}', parameters: '${JSON.stringify(params)}, error: '${e}'`);
+            throw new Error(`Cannot create check with name: '${checkName}', parameters: '${JSON.stringify(opts)}, error: '${e + e.stack}'`);
         }
     }
 
@@ -252,7 +271,7 @@ class SyngrisiDriver {
             }
             return resultWithHash;
         } catch (e) {
-            throw new Error(`error in coreCheck: ${e}`);
+            throw new Error(`error in coreCheck: '${e + e.stack}'`);
         }
     }
 
