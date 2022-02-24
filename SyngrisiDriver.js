@@ -129,9 +129,7 @@ class SyngrisiDriver {
             $this.params.ident = await $this.api.getIdent(apikey);
 
             if (!$this.params.suite) {
-                $this.setCurrentSuite({
-                    name: params.suite || 'Others',
-                });
+                $this.params.suite = params.suite || 'Others';
             }
 
             const os = await SyngrisiDriver.getOS();
@@ -273,10 +271,6 @@ class SyngrisiDriver {
         } catch (e) {
             throw new Error(`error in coreCheck: '${e + e.stack}'`);
         }
-    }
-
-    setCurrentSuite(opts) {
-        this.params.suite = opts;
     }
 }
 
