@@ -111,14 +111,6 @@ class SyngrisiDriver {
         return fullVersion.split('.')[0];
     }
 
-    identArgsGuard(params) {
-        this.params.ident.forEach((item) => {
-            if (!params[item]) {
-                throw new Error(`Wrong parameters for ident, the ${item} property is empty`);
-            }
-        });
-    }
-
     async startTestSession(params, apikey) {
         const $this = this;
         try {
@@ -128,7 +120,7 @@ class SyngrisiDriver {
 
             $this.params.ident = await $this.api.getIdent(apikey);
 
-            if (!$this.params.suite) {
+            if (params.suite) {
                 $this.params.suite = params.suite || 'Others';
             }
 
@@ -195,6 +187,23 @@ class SyngrisiDriver {
         return patchedResult;
     }
 
+    identArgsGuard(params) {
+        this.params.ident.forEach((item) => {
+            if (!params[item]) {
+                throw new Error(`Wrong parameters for ident, the '${item}' property is empty`);
+            }
+        });
+    }
+
+    removeNonIdentProperties(params) {
+        const opts = { ...params };
+
+        for (const prop of Object.keys(opts)) {
+            if (!(prop in this.params.ident)) delete opts[prop];
+        }
+        return opts;
+    }
+
     /**
      * Check if the baseline exist with specific ident and specific hashcode
      * @param {Buffer} imageBuffer  image buffer
@@ -204,21 +213,22 @@ class SyngrisiDriver {
      * @returns {Promise<Object>}
      */
     // ident:  ['name', 'viewport', 'browserName', 'os', 'app', 'branch'];
-    async checkIfBaselineExist(imageBuffer, name, apikey, params) {
-        this.identArgsGuard(params);
+    async checkIfBaselineExist(name, imageBuffer, apikey, params) {
         const $this = this;
         const imgHash = hasha(imageBuffer);
-        const opts = {
+        let opts = {
             name: name,
             viewport: params.viewport || await SyngrisiDriver.getViewport(),
             browserName: $this.params.browserName || await SyngrisiDriver.getBrowserVersion(),
             os: $this.params.os || await SyngrisiDriver.getOS(),
             app: $this.params.app,
             branch: $this.params.branch,
-            hashCode: hasha(imageBuffer),
+            imghash: imgHash,
         };
-        Object.assign(opts, params);
-        return $this.api.checkIfBaselineExist(imgHash, opts, apikey);
+
+        this.identArgsGuard(opts);
+        Object.assign(opts, this.removeNonIdentProperties(params));
+        return $this.api.checkIfBaselineExist(opts, apikey);
     }
 
     async check(checkName, imageBuffer, apikey, params, domDump) {
@@ -254,7 +264,7 @@ class SyngrisiDriver {
         }
     }
 
-    async coreCheck(imgData, params, apikey) {
+    async coreCheck(imageBuffer, params, apikey) {
         const $this = this;
         try {
             let resultWithHash = await $this.api.createCheck(params, false, params.hashCode, apikey);
@@ -262,7 +272,7 @@ class SyngrisiDriver {
 
             log.info(`Check result Phase #1: ${utils.prettyCheckResult(resultWithHash)}`);
             if (resultWithHash.status === 'requiredFileData') {
-                let resultWithFile = await $this.api.createCheck(params, imgData, params.hashCode, apikey);
+                let resultWithFile = await $this.api.createCheck(params, imageBuffer, params.hashCode, apikey);
                 log.info(`Check result Phase #2: ${utils.prettyCheckResult(resultWithFile)}`);
                 resultWithFile = $this.addMessageIfCheckFailed(resultWithFile);
                 return resultWithFile;
