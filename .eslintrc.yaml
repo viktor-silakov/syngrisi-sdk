@@ -4,6 +4,8 @@ env:
 
 extends:
   - 'airbnb-base'
+  - "eslint:recommended"
+
 
 globals:
   assert: true

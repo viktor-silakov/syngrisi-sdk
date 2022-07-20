@@ -97,6 +97,7 @@ class SyngrisiDriver {
             version = browser.capabilities?.browserVersion || browser.capabilities?.version;
         }
         if (!version) {
+            // eslint-disable-next-line max-len
             throw new Error('Cannot get Browser Version, try to check "capabilities.version", "capabilities.platformVersion" or "capabilities.browserVersion"');
         }
         return version;
@@ -260,27 +261,23 @@ class SyngrisiDriver {
             );
             return $this.coreCheck(imageBuffer, opts, apikey);
         } catch (e) {
-            throw new Error(`Cannot create check with name: '${checkName}', parameters: '${JSON.stringify(opts)}, error: '${e + e.stack}'`);
+            throw new Error(`cannot create check, parameters: '${JSON.stringify(opts)}, error: '${e.stack || e}'`);
         }
     }
 
     async coreCheck(imageBuffer, params, apikey) {
         const $this = this;
-        try {
-            let resultWithHash = await $this.api.createCheck(params, false, params.hashCode, apikey);
-            resultWithHash = $this.addMessageIfCheckFailed(resultWithHash);
+        let resultWithHash = await $this.api.createCheck(params, false, params.hashCode, apikey);
+        resultWithHash = $this.addMessageIfCheckFailed(resultWithHash);
 
-            log.info(`Check result Phase #1: ${utils.prettyCheckResult(resultWithHash)}`);
-            if (resultWithHash.status === 'requiredFileData') {
-                let resultWithFile = await $this.api.createCheck(params, imageBuffer, params.hashCode, apikey);
-                log.info(`Check result Phase #2: ${utils.prettyCheckResult(resultWithFile)}`);
-                resultWithFile = $this.addMessageIfCheckFailed(resultWithFile);
-                return resultWithFile;
-            }
-            return resultWithHash;
-        } catch (e) {
-            throw new Error(`error in coreCheck: '${e + e.stack}'`);
+        log.info(`Check result Phase #1: ${utils.prettyCheckResult(resultWithHash)}`);
+        if (resultWithHash.status === 'requiredFileData') {
+            let resultWithFile = await $this.api.createCheck(params, imageBuffer, params.hashCode, apikey);
+            log.info(`Check result Phase #2: ${utils.prettyCheckResult(resultWithFile)}`);
+            resultWithFile = $this.addMessageIfCheckFailed(resultWithFile);
+            return resultWithFile;
         }
+        return resultWithHash;
     }
 }
 
