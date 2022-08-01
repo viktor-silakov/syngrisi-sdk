@@ -28,7 +28,7 @@
   "homepage": "https://github.com/viktor-silakov/vrs-sdk/blob/master/README.md",
   "dependencies": {
     "@wdio/logger": "^7.16.0",
-    "got-cjs": "^12.0.1",
+    "got-cjs": "^12.0.4",
     "hasha": "^5.2.0"
   },
   "devDependencies": {
