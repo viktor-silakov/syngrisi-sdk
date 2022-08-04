@@ -77,11 +77,16 @@ class SyngrisiDriver {
     }
 
     static isAndroid() {
-        return (browser.options.capabilities.browserName === 'Android' || browser.options.capabilities.platformName === 'Android');
+        return (
+            browser.isAndroid
+            || (browser.options.capabilities.browserName === 'Android')
+            || (browser.options.capabilities.platformName === 'Android')
+        );
     }
 
     static isIos() {
-        return (browser.execute(() => navigator.platform) === 'iPhone')
+        return browser.isIOS
+            || (browser.execute(() => navigator.platform) === 'iPhone')
             || (browser.options.capabilities?.platformName?.toLowerCase() === 'ios')
             || (browser.options.capabilities?.browserName === 'iPhone')
             || false;
