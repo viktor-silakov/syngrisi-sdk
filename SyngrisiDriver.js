@@ -159,6 +159,7 @@ class SyngrisiDriver {
                 os: os,
                 app: params.app,
                 run: params.run,
+                suite: params.suite,
                 runident: params.runident,
                 tags: params.tags,
                 branch: params.branch,
