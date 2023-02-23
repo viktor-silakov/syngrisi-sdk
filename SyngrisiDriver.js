@@ -130,11 +130,11 @@ class SyngrisiDriver {
                 $this.params.suite = params.suite || 'Others';
             }
 
-            const os = await SyngrisiDriver.getOS();
-            const viewport = await SyngrisiDriver.getViewport();
-            const browserName = await SyngrisiDriver.getBrowserName();
-            const browserVersion = await SyngrisiDriver.getBrowserVersion();
-            const browserFullVersion = await SyngrisiDriver.getBrowserFullVersion();
+            const os = params.os || await SyngrisiDriver.getOS();
+            const viewport = params.viewport || await SyngrisiDriver.getViewport();
+            const browserName = params.browserName || await SyngrisiDriver.getBrowserName();
+            const browserVersion = params.browserVersion || await SyngrisiDriver.getBrowserVersion();
+            const browserFullVersion = params.browserFullVersion || await SyngrisiDriver.getBrowserFullVersion();
             const testName = params.test;
 
             Object.assign(
@@ -248,16 +248,16 @@ class SyngrisiDriver {
         try {
             // ident:  ['name', 'viewport', 'browserName', 'os', 'app', 'branch'];
             opts = {
-                testId: $this.params.testId,
-                suite: $this.params.suite,
+                testId: $this.params?.testId,
+                suite: $this.params?.suite,
                 name: checkName,
-                viewport: await SyngrisiDriver.getViewport(),
-                browserName: $this.params.browserName || await SyngrisiDriver.getBrowserVersion(),
-                browserVersion: $this.params.browserVersion || await SyngrisiDriver.getBrowserVersion(),
-                browserFullVersion: $this.params.browserFullVersion || await SyngrisiDriver.getBrowserFullVersion(),
-                os: $this.params.os || await SyngrisiDriver.getOS(),
-                app: $this.params.app,
-                branch: $this.params.branch,
+                viewport: params?.viewport || await SyngrisiDriver.getViewport(),
+                browserName: $this.params?.browserName || await SyngrisiDriver.getBrowserVersion(),
+                browserVersion: $this.params?.browserVersion || await SyngrisiDriver.getBrowserVersion(),
+                browserFullVersion: $this.params?.browserFullVersion || await SyngrisiDriver.getBrowserFullVersion(),
+                os: $this.params?.os || await SyngrisiDriver.getOS(),
+                app: $this.params?.app,
+                branch: $this.params?.branch,
                 hashCode: hasha(imageBuffer),
                 domDump: domDump,
             };
