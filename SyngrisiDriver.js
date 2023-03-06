@@ -185,11 +185,11 @@ class SyngrisiDriver {
         const $this = this;
         const patchedResult = result;
         if (patchedResult.status.includes('failed')) {
-            const checkView = `${$this.config.url}?checkId${patchedResult._id}&modalIsOpen=true`;
-            patchedResult.message = `To evaluate the results of the check, follow the link: '${$this.config.url}?checkId=${patchedResult._id}&modalIsOpen=true'\n
-            '${checkView}'`;
-            patchedResult.vrsGroupLink = `'${$this.config.url}?checkId=${patchedResult._id}&modalIsOpen=true'`;
-            patchedResult.vrsDiffLink = `'${checkView}'`;
+            const checkView = `'${$this.config.url}?checkId=${patchedResult._id}&modalIsOpen=true'`;
+            patchedResult.message = `To evaluate the results of the check, follow the link: '${checkView}'`;
+            // basically the links is useless - backward compatibility
+            patchedResult.vrsGroupLink = checkView;
+            patchedResult.vrsDiffLink = checkView;
         }
         return patchedResult;
     }
